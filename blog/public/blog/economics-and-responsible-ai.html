@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Economics and Ethics of Production AI — Sireesha Jakku</title>
+<link rel="stylesheet" href="/blog/post.css">
+<script>try{if(localStorage.getItem('theme')!=='dark')document.addEventListener('DOMContentLoaded',function(){document.body.classList.add('light')})}catch(e){}</script>
+</head>
+<body class="light">
+<div class="page">
+
+<header class="post-header">
+  <a href="/" class="home-link">← home</a>
+  <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">☀ DARK</button>
+</header>
+
+<article>
+  <p class="post-date">Feb 7, 2026</p>
+  <h1>AI System Design: Part-5 -The Economics and Ethics of Production AI</h1>
+  <p class="post-summary">The most sophisticated AI architecture in the world fails the moment it is unaffordable to run or unsafe to deploy.</p>
+  <hr>
+
+  <p><em>The most sophisticated AI architecture in the world fails the moment it's unaffordable to run or unsafe to deploy.</em></p>
+  <hr>
+
+  <p>Most AI design conversations end at "how do we build this?" The questions that decide whether a system survives are different: how much does it cost at scale, when do we build vs. buy, how fast can we serve it? And then the ones getting harder to ignore: who does this hurt, what happens when it's wrong, are we compliant? This is the professional-practice layer that separates great demos from systems that last.</p>
+  <hr>
+
+  <h2>The Economics of AI Systems</h2>
+
+  <h3>Cost Is a First-Class Architecture Concern</h3>
+  <p>A model costing $0.002 per user per day sounds cheap — until 50 million users make it $36.5M/year, before storage, feature computation, and the team running it. AI costs dwarf web service costs, mostly because of GPU compute: an NVIDIA H100 on AWS runs ~$32/hour, so 10 of them at constant traffic is $2.8M/year before a model is even trained. Cost optimization belongs in the architecture conversation from day one.</p>
+
+  <h3>Build vs. Buy</h3>
+  <p>The most expensive mistake is building what you should buy; the second is buying what you should build.</p>
+  <p><strong>Differentiation</strong> — build what creates competitive advantage (your recommendation model), buy the infrastructure that serves it.</p>
+  <p><strong>Complexity-maturity</strong> — in 2026, building your own vector database is rarely justified when Qdrant, Pinecone, and pgvector are mature.</p>
+  <p><strong>Data privacy</strong> — if data legally can't leave your infra (HIPAA, defense), self-host regardless of cost.</p>
+  <p><strong>Cost-at-scale</strong> — APIs are cheaper at low volume, costlier at high. GPT-4o at 500M tokens/day is ~$450K/year; a self-hosted Llama-3-70B on 4× H100 is ~$47K/year — but self-hosting adds real operational overhead.</p>
+
+  <div class="diagram">
+    <script type="text/mermaid">
+flowchart TD
+    Q1{Creates competitive advantage?} -->|Yes| Build[Build]
+    Q1 -->|No| Q2{Data privacy constraint?}
+    Q2 -->|Yes| Build
+    Q2 -->|No| Q3{API cheaper at current scale?}
+    Q3 -->|Yes| Buy[Buy via API]
+    Q3 -->|No| Q4{Team absorbs ops overhead?}
+    Q4 -->|Yes| Build
+    Q4 -->|No| Buy
+    </script>
+    <div class="diagram-svg"></div>
+  </div>
+
+  <h3>Compute Cost Management</h3>
+  <p>GPU compute is the biggest lever. <strong>Spot/preemptible instances</strong> cost 60–90% less — viable for training if you checkpoint every 15–30 minutes, risky for serving. <strong>Right-sizing</strong> is the biggest waste: a 7B model (14GB) on an 80GB A100 wastes 66GB; an A10G (24GB) is correct and ~4× cheaper. <strong>Batching</strong> amortizes fixed overhead — dynamic batching (fire on size <em>or</em> time threshold) is the production compromise; vLLM's continuous batching goes further. <strong>Scale to zero</strong> for bursty/off-peak workloads via KEDA saves 30–50% of serving cost.</p>
+  <hr>
+
+  <h2>Inference Optimization</h2>
+  <p>A request travels: network → model load (warm) → preprocessing → <strong>forward pass</strong> → encoding. In well-designed systems the forward pass is almost always the bottleneck; everything else is noise.</p>
+
+  <h3>Quantization</h3>
+  <p>Inference can run at reduced precision with little accuracy loss. <strong>FP16</strong> halves memory, runs fast on Tensor Cores, nearly free — the default. <strong>INT8</strong> gives 4× reduction at 1–3% loss (TensorRT, bitsandbytes). <strong>INT4</strong> (GPTQ, AWQ) shrinks a 7B model to ~3.5GB, fitting a single RTX 4090, at 2–5% loss. Google's TurboQuant (2026) compresses the KV cache to 3 bits with near-zero loss, 6× reduction for long-context serving. Practical rule: FP16 by default, INT8 if memory-bound, INT4 to run large models on cheaper GPUs when you can tolerate a small accuracy trade-off.</p>
+
+  <div class="diagram">
+    <script type="text/mermaid">
+flowchart TD
+    FP32[FP32 32-bit Training only] -->|Halve memory| FP16[FP16 16-bit Default serving]
+    FP16 -->|4x reduction 1-3pct loss| INT8[INT8 TensorRT bitsandbytes]
+    INT8 -->|8x reduction 2-5pct loss| INT4[INT4 GPTQ AWQ 7B fits RTX 4090]
+    INT4 -->|6x KV reduction| KV3[KV-Cache 3-bit TurboQuant 2026]
+    </script>
+    <div class="diagram-svg"></div>
+  </div>
+
+  <h3>KV Cache, PagedAttention, and Speculative Decoding</h3>
+  <p>LLM inference is sequential — each new token attends to all previous ones, storing their Key-Value cache. Naive management pre-allocates a contiguous block for the maximum context; if the max is 4,096 but average use is 512, 87.5% is wasted. <strong>PagedAttention</strong> (vLLM) treats the KV cache like virtual memory — fixed-size pages allocated as needed, shared across requests with identical tokens (system prompts). Result: 2–4× higher throughput on the same hardware.</p>
+  <p><strong>Speculative decoding</strong> cuts per-token <em>latency</em>: a small fast "draft" model proposes several tokens, the large model verifies them in one forward pass. Accept all and you've generated N tokens in roughly the time of one. Standard draft models give 2–3×; EAGLE-3 (2025–26) predicts from the target model's own hidden states for 3–5×, with no separate draft model.</p>
+
+  <h3>Hardware Selection</h3>
+  <p><strong>H100/H200</strong> — the performance reference (H200 adds 141GB memory for larger contexts); best when raw performance beats cost. <strong>Google TPU v6e</strong> — inference-optimized, 5–20ms latency, but CUDA-incompatible (XLA/JAX) — a real migration cost from PyTorch. <strong>AWS Inferentia2</strong> — cheap for inference-only on compatible standardized models. <strong>NVIDIA A10G/L4</strong> — mid-range at 4–5× lower cost, correct for 7B–13B models when peak throughput isn't required; many RAG and chatbot apps run fine here.</p>
+  <hr>
+
+  <h2>Responsible AI: An Architecture Concern, Not a Checklist</h2>
+  <p>Privacy, security, fairness, and compliance are architectural properties like scalability — designed in, not bolted on. Treating them as a pre-launch checklist guarantees they're done poorly.</p>
+
+  <h3>Privacy</h3>
+  <p>Encryption and access controls are necessary but insufficient, because models can <em>memorize</em> training data. <strong>Differential privacy</strong> (DP-SGD) adds calibrated noise so no individual record can be inferred; the budget ε trades privacy against accuracy (5–15% loss, 2–3× slower). <strong>Federated learning</strong> trains on-device, sending gradients not data — though gradients can leak, so combine with DP. <strong>Synthetic data</strong> generates privacy-safe data mimicking real statistics, now viable for many classification/regression tasks.</p>
+
+  <h3>Security: AI-Specific Attack Surfaces</h3>
+  <p><strong>Prompt injection</strong> — malicious instructions in user text or in documents a RAG pipeline retrieves; defense is to treat LLM outputs as untrusted input and validate formats. <strong>Model inversion / membership inference</strong> — reconstruct training data or determine if a record was in the training set; partially mitigated by DP. <strong>Supply chain</strong> — backdoored checkpoints or malicious libraries; verify hashes, scan with PickleScan, maintain a model bill of materials. <strong>Adversarial examples</strong> — imperceptible perturbations causing confident misclassification; adversarial training helps but doesn't eliminate it.</p>
+
+  <h3>Fairness: The Measurement Problem</h3>
+  <p>Models trained on historical data inherit historical bias. The hard truth: fairness isn't one metric, and the definitions <strong>mathematically conflict</strong>. You can't simultaneously satisfy demographic parity, equalized odds, and predictive rate parity except when the model is perfect. Choosing which to optimize is a value judgment, not a technical one.</p>
+  <p>What teams can do: <strong>measure disaggregated performance</strong> (precision, recall, false-positive rates by protected attribute, not just aggregate accuracy); <strong>trace disparities to root causes</strong>; and <strong>explicitly choose and document</strong> a fairness criterion. Tools: IBM AI Fairness 360, Microsoft Fairlearn, Google's What-If Tool.</p>
+
+  <h3>Regulatory: The EU AI Act</h3>
+  <p>The EU AI Act is now the most significant AI regulation in force, with its critical high-risk enforcement deadline on <strong>August 2, 2026</strong>. If you deploy AI in employment, credit, education, law enforcement, critical infrastructure, healthcare, or biometric ID within the EU, conformity assessments, technical documentation, user transparency, and meaningful human oversight are required. Penalties reach €30M or 6% of global revenue.</p>
+  <hr>
+
+  <h2>A Production Checklist</h2>
+  <ul>
+    <li><strong>Infrastructure</strong> — GPU utilization tracked, autoscaling configured, requests batched?</li>
+    <li><strong>Economics</strong> — TCO calculated at projected scale, build-vs-buy justified per component?</li>
+    <li><strong>Performance</strong> — latency measured at P50/P95/P99, quantization applied, latency budget met?</li>
+    <li><strong>Monitoring</strong> — drift on key features, performance on rolling labeled window, alerts routed to owners?</li>
+    <li><strong>Privacy/security</strong> — compliant data handling, red-teamed for prompt injection?</li>
+    <li><strong>Fairness</strong> — disaggregated metrics computed, criterion chosen and documented?</li>
+    <li><strong>Regulatory</strong> — legal review done, documentation audit-ready?</li>
+  </ul>
+  <p>None of these is a checkbox for its own sake. Each represents a failure mode that has happened to real teams. The discipline of production AI is mostly the discipline of not learning these lessons the hard way.</p>
+
+  <div class="series-nav">
+    <p>← <a href="/blog/advanced-ai-architectures.html">Part 4 — Advanced AI Architectures</a></p>
+    <p><a href="/blog/infrastructure-foundations.html">Start from Part 1 →</a></p>
+  </div>
+
+  <div class="sources">
+    <p class="sources-title">Sources</p>
+    <ul>
+      <li><a href="https://www.morphllm.com/llm-inference-optimization" target="_blank" rel="noopener">LLM Inference Optimization: Cut Cost &amp; Latency at Every Layer (2026)</a></li>
+      <li><a href="https://blog.premai.io/speculative-decoding-2-3x-faster-llm-inference-2026/" target="_blank" rel="noopener">Speculative Decoding: 2-3x Faster LLM Inference (2026)</a></li>
+      <li><a href="https://pinggy.io/blog/fastest_ai_inference_hardware/" target="_blank" rel="noopener">Fast AI Inference Hardware in 2026</a></li>
+      <li><a href="https://www.eigenstate.dev/essay/cpu-vs-gpu-vs-tpu-vs-npu-ai-hardware-architecture-guide-2026" target="_blank" rel="noopener">CPU vs GPU vs TPU vs NPU: AI Hardware Architecture Guide 2026</a></li>
+      <li><a href="https://secureprivacy.ai/blog/eu-ai-act-2026-compliance" target="_blank" rel="noopener">EU AI Act 2026: Key Compliance Requirements for Enterprises</a></li>
+      <li><a href="https://enactia.com/the-2026-eu-ai-act-checklist-how-to-bridge-the-gap-between-privacy-and-ai-governance/" target="_blank" rel="noopener">The 2026 EU AI Act Checklist: Privacy and AI Governance</a></li>
+      <li><a href="https://www.parloa.com/blog/AI-privacy-2026/" target="_blank" rel="noopener">AI Privacy Rules: GDPR, EU AI Act, and U.S. Law</a></li>
+    </ul>
+  </div>
+</article>
+
+<nav class="post-nav">
+  <a href="/blog/advanced-ai-architectures.html">
+    <span class="nav-label">Previous</span>
+    ← Advanced AI Architectures
+  </a>
+  <a href="/blog/infrastructure-foundations.html" class="nav-next">
+    <span class="nav-label">Series start</span>
+    Back to Part 1 →
+  </a>
+</nav>
+
+</div>
+<script type="module" src="/blog/post.js"></script>
+</body>
+</html>

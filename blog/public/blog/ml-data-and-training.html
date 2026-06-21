@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>From Raw Data to Trained Model — Sireesha Jakku</title>
+<link rel="stylesheet" href="/blog/post.css">
+<script>try{if(localStorage.getItem('theme')!=='dark')document.addEventListener('DOMContentLoaded',function(){document.body.classList.add('light')})}catch(e){}</script>
+</head>
+<body class="light">
+<div class="page">
+
+<header class="post-header">
+  <a href="/" class="home-link">← home</a>
+  <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">☀ DARK</button>
+</header>
+
+<article>
+  <p class="post-date">Jan 17, 2026</p>
+  <h1>AI System Design: Part-2 - From Raw Data to Trained Model: Engineering the ML Lifecycle</h1>
+  <p class="post-summary">Why data pipelines are harder than model training — and why most production failures trace back to decisions made before a single gradient was computed.</p>
+  <hr>
+
+  <p><em>Why data pipelines are harder than model training — and why most production failures trace back to decisions made before a single gradient was computed.</em></p>
+  <hr>
+
+  <p>Ask experienced ML engineers where production failures start and they'll say the same thing: not in the model, in the data. A 2025 analysis found 60% of ML project failures trace back to data pipeline issues, and training-serving skew silently degrades 40% of production models.</p>
+  <p>This is the part textbooks skip because it isn't mathematically interesting. It's engineering, plumbing, and operational discipline — and it's where the real work lives.</p>
+  <hr>
+
+  <h2>The Mindset Shift: Data Is Code</h2>
+  <p>A dataset isn't a static artifact — it's the output of a pipeline. Like any software, that pipeline has bugs, changes over time, and needs version control.</p>
+  <p>In traditional software, reproducing a bug means checking out the code at the right commit. In ML, reproducing a model means checking out the code <em>and the exact dataset it trained on</em>. Code alone reproduces the training process, not the trained artifact. This is what drives the whole discipline: making data pipelines reproducible, versioned, testable, and observable — just like code.</p>
+  <hr>
+
+  <h2>Data Ingestion: Where It Starts and Breaks</h2>
+  <p><strong>Batch ingestion</strong> runs on a schedule — simple to reason about, easy to rerun, fine when a few hours of staleness is acceptable. <strong>Stream ingestion</strong> processes events in real time, landing within seconds. The question isn't "which is better" but "what latency does my system actually need?" Real-time recommendations need streaming (behavior from 5 minutes ago is predictive); a weekly-retrained churn model doesn't. Defaulting to streaming "because it's modern" adds complexity that only pays off when latency genuinely demands it.</p>
+  <p><strong>Schema validation</strong> is the unglamorous lifesaver. Upstream data is untrustworthy — a DB migration, a vendor API change, or a new app version can silently corrupt training data. Validate every record against expected types, ranges, and cardinalities at ingestion; failures alert rather than pass through. Great Expectations, Pandera, and dbt tests make this version-controlled. Missing a bad record is recoverable; discovering six weeks post-deploy that the model trained on corrupted data is not.</p>
+  <hr>
+
+  <h2>Lake, Warehouse, or Lakehouse?</h2>
+  <p>A <strong>data lake</strong> stores raw data cheaply in any format — but queries are slow, with no transactions or versioning. A <strong>data warehouse</strong> stores structured data for fast analytical SQL with ACID semantics — but it's costly and poor for unstructured data. The <strong>Lakehouse</strong> (Delta Lake, Iceberg, Hudi) is the 2026 consensus: it adds transactions, schema enforcement, and versioning to object storage. Crucially, it allows time-travel queries (<code>SELECT * FROM training_data VERSION AS OF '2025-09-01'</code>) — exactly what you need to reproduce a months-old training run.</p>
+  <hr>
+
+  <h2>Data Versioning: DVC and the Git Analogy</h2>
+  <p>Git works for code because diffs are small. A 500GB dataset doesn't diff. <strong>DVC (Data Version Control)</strong> separates the data from its metadata: a small pointer file (content hash + remote location) lives in Git alongside your code, while the actual data lives in S3/GCS. <code>git checkout</code> a commit and DVC fetches the matching dataset version. <code>dvc repro</code> runs the full pipeline tracking which data, code, and parameters produced each artifact.</p>
+  <p>The alternative — <code>training_data_v2_final_FINAL.csv</code> in a shared bucket — is reality at most orgs until the painful day someone says "reproduce the model from three months ago" and nobody knows which dataset it used.</p>
+  <hr>
+
+  <h2>The Feature Store and Training-Serving Skew</h2>
+  <p>A feature store computes, stores, and serves features centrally. The pitch sounds like tidiness, but the real reason it matters is <strong>training-serving skew</strong>.</p>
+  <p>Consider "purchases in the last 30 days." During training you write a SQL query over history. During serving you need that count in real time, in milliseconds, for one user. Two implementations of the same logic, by different people, in different environments — and they diverge. Maybe training uses UTC and serving uses local time. Maybe nulls are handled differently. Each is a silent bug: the model trains fine, validates fine, then quietly underperforms because serving inputs don't match the training distribution.</p>
+  <p>The key guarantee a feature store provides: the <strong>same transformation code</strong> feeds both the offline store (historical values for training) and the online store (latest values for serving). It runs once, not twice, so the two can't drift.</p>
+
+  <div class="diagram">
+    <script type="text/mermaid">
+flowchart TD
+    Source[Raw Source] --> FST[Feature Store Transform]
+    FST --> Offline[Offline Store for Training]
+    FST --> Online[Online Store Redis for Serving]
+    Offline --> Training[Model Training]
+    Online --> Serving[Model Serving]
+    Training <-->|same features no skew| Serving
+    </script>
+    <div class="diagram-svg"></div>
+  </div>
+
+  <p>Scale is real: Uber's Michelangelo processes 10 trillion feature computations daily; Airbnb's Zipline serves sub-10ms; DoorDash's Fabricator cut feature engineering time 90%. Open-source: Feast (most deployed), Hopsworks, Feathr. Managed: Tecton, Databricks. Feast + Redis is a reasonable starting baseline.</p>
+  <hr>
+
+  <h2>Model Training: The Part Everyone Over-Focuses On</h2>
+
+  <h3>Experiment Tracking</h3>
+  <p>The biggest training mistake is treating experiments as ephemeral. "I'll remember which run was best" is how you lose weeks. <strong>MLflow</strong> and <strong>Weights &amp; Biases</strong> log everything per run: hyperparameters, metrics over time, hardware use, code version, dataset version, final artifact. You can query "all runs where validation AUC &gt; 0.87" and compare. Every experiment becomes reproducible — and you can prove improvements are real, not artifacts of a changed dataset.</p>
+
+  <h3>Distributed Training: When You Actually Need It</h3>
+  <p>You need it when a model doesn't fit in one GPU's memory, or when single-GPU training is too slow for your iteration cycle. A 7B model in FP16 needs 14GB and fits on an 80GB A100; a 70B model doesn't — that's the memory threshold forcing model parallelism. For time: 30 days/iteration weekly means you need it; 4 hours means you don't.</p>
+  <p><strong>Data parallelism</strong> replicates the model on each GPU, each processing a different data shard; gradients average via AllReduce. PyTorch DDP implements this — but communication overhead means ~1.5–1.8× on 2 GPUs, not a clean 2×. <strong>Model parallelism</strong> splits the model itself across GPUs (necessary when it won't fit), with pipeline parallelism (Megatron-LM) the most scalable form. <strong>DeepSpeed</strong>'s ZeRO stages partition optimizer states, gradients, and parameters across GPUs, enabling hundred-billion-parameter training on commodity hardware.</p>
+
+  <h3>Hyperparameter Optimization Beyond Grid Search</h3>
+  <p>Manually trying learning rates wastes compute. <strong>Bayesian optimization</strong> (Optuna, W&amp;B Sweeps) models the performance surface and picks the most promising next trial — often 5–10× fewer trials than random search. <strong>Hyperband/ASHA</strong> starts many trials with few epochs, kills the worst early, and reallocates to survivors — ideal when a single run is expensive. The practical stack: Ray Tune for orchestration, Optuna as the search backend, MLflow for logging.</p>
+  <hr>
+
+  <h2>The Pipeline That Ties It Together</h2>
+  <p>Production ML is a DAG of automated jobs: Ingest → Validate → Transform → Features → Train → Evaluate → Register → Deploy.</p>
+
+  <div class="diagram">
+    <script type="text/mermaid">
+flowchart LR
+    Ingest --> Validate
+    Validate --> Transform
+    Transform --> Features
+    Features --> Train
+    Train --> Evaluate
+    Evaluate -->|Pass| Register
+    Register --> Deploy
+    Evaluate -->|Below threshold| Train
+    </script>
+    <div class="diagram-svg"></div>
+  </div>
+
+  <p><strong>Airflow</strong> is the most-deployed orchestrator for batch ML, though its scheduler was built for ETL, so GPU allocation needs careful Kubernetes integration. <strong>Kubeflow Pipelines</strong> and <strong>ZenML</strong> are purpose-built for ML; ZenML's swappable backends (local → Airflow → Kubeflow) are worth evaluating for new platforms. The key property: <strong>every step should be idempotent</strong> — rerunning from a checkpoint produces the same result. That requires careful checkpointing, deterministic shuffling (fixed seeds), and separating stateful from stateless operations.</p>
+  <hr>
+
+  <h2>What Architects Should Mandate</h2>
+  <p>Three non-negotiables from day one: <strong>data versioning</strong> for all training datasets (DVC or Lakehouse time-travel) before the first training run; a <strong>feature store</strong> with online and offline planes before the first model using real-time features (retrofitting is far costlier); and <strong>experiment tracking</strong> that links code <em>and</em> data versions, not just metrics.</p>
+  <p>Unglamorous, no conference talk — but it's what separates teams that iterate reliably from teams that spend half their time debugging "why did this perform differently last time?"</p>
+
+  <div class="series-nav">
+    <p>← <a href="/blog/infrastructure-foundations.html">Part 1 — The Infrastructure Every AI Engineer Needs to Understand</a></p>
+    <p>Next: <a href="/blog/deployment-and-monitoring.html">Part 3 — Deploying and Keeping AI Models Alive in Production →</a></p>
+  </div>
+
+  <div class="sources">
+    <p class="sources-title">Sources</p>
+    <ul>
+      <li><a href="https://dev.to/synapcores/why-feature-stores-didnt-fix-training-serving-skew-fad" target="_blank" rel="noopener">Why Feature Stores Didn't Fix Training–Serving Skew</a></li>
+      <li><a href="https://dev.to/apprecode/mlops-challenges-7-production-problems-and-how-to-fix-them-5goc" target="_blank" rel="noopener">MLOps Challenges: 7 Production Problems and How to Fix Them</a></li>
+      <li><a href="https://ambacia.eu/careers-post/why-your-ml-model-fails-in-production/" target="_blank" rel="noopener">Why Your ML Model Fails in Production: 9 Deployment Mistakes</a></li>
+      <li><a href="https://www.databricks.com/blog/what-feature-store-complete-guide-ml-feature-engineering" target="_blank" rel="noopener">What is a Feature Store? A Complete Guide</a></li>
+      <li><a href="https://apxml.com/courses/advanced-ai-infrastructure-design-optimization/chapter-5-scalable-data-feature-engineering/designing-implementing-feature-store" target="_blank" rel="noopener">Designing and Implementing a Feature Store</a></li>
+    </ul>
+  </div>
+</article>
+
+<nav class="post-nav">
+  <a href="/blog/infrastructure-foundations.html">
+    <span class="nav-label">Previous</span>
+    ← The Infrastructure Every AI Engineer Needs
+  </a>
+  <a href="/blog/deployment-and-monitoring.html" class="nav-next">
+    <span class="nav-label">Next</span>
+    Deploying and Keeping AI Models Alive →
+  </a>
+</nav>
+
+</div>
+<script type="module" src="/blog/post.js"></script>
+</body>
+</html>

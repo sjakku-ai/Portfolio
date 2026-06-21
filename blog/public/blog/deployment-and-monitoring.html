@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deploying and Keeping AI Models Alive in Production — Sireesha Jakku</title>
+<link rel="stylesheet" href="/blog/post.css">
+<script>try{if(localStorage.getItem('theme')!=='dark')document.addEventListener('DOMContentLoaded',function(){document.body.classList.add('light')})}catch(e){}</script>
+</head>
+<body class="light">
+<div class="page">
+
+<header class="post-header">
+  <a href="/" class="home-link">← home</a>
+  <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">☀ DARK</button>
+</header>
+
+<article>
+  <p class="post-date">Jan 24, 2026</p>
+  <h1>AI System Design: Part-3 - Deploying and Keeping AI Models Alive in Production</h1>
+  <p class="post-summary">Deployment is where confidence meets reality. Monitoring is where you find out how wrong you were.</p>
+  <hr>
+
+  <p><em>Deployment is where confidence meets reality. Monitoring is where you find out how wrong you were.</em></p>
+  <hr>
+
+  <p>Passing validation metrics is a milestone. Serving reliable predictions to real users, at scale, with acceptable latency, and still doing it six months later — that's the actual engineering challenge. This post covers the second half of the ML lifecycle: packaging and deploying without losing sleep, and detecting the slow, silent degradation that eventually claims every unmaintained model.</p>
+  <hr>
+
+  <h2>The Gap Between "Working" and "Deployed"</h2>
+  <p>A trained model is a serialized file — weights and a graph. By itself it's inert. Deploying means building everything around it: a server that loads the model and serves requests, plus all the preprocessing that turns raw inputs into the exact tensors the model expects, and postprocessing back into your app's format.</p>
+  <p>The catch: training-time and serving-time preprocessing are usually written by different people, in different languages, at different times. They accumulate divergences. The model trained on inputs from a specific scaler; at serving the normalization is reimplemented slightly differently — and the model quietly produces bad predictions with no error thrown. This is why packaging matters.</p>
+
+  <h3>Model Packaging</h3>
+  <p>A deployed model should be self-contained: weights, transformation code, input schema, and library versions.</p>
+  <p><strong>ONNX</strong> serializes the graph and preprocessing into one portable file that runs on ONNX Runtime regardless of training framework. <strong>MLflow format</strong> wraps the artifact with its flavor and environment, deployable to Databricks, SageMaker, or Azure ML. <strong>BentoML</strong> is more opinionated — you define a <code>Service</code> class with explicit schemas, and preprocessing lives in the same package so it can't diverge. <strong>Model registries</strong> add versioning and lifecycle governance (who approved each promotion) — essential when regulators demand audit trails.</p>
+  <hr>
+
+  <h2>Serving Patterns: Choosing the Right Shape</h2>
+  <p><strong>Online serving</strong> runs a persistent service responding in 100–500ms — right when a user is waiting (search ranking, fraud check at checkout). Infrastructure: TorchServe (clean PyTorch integration, weak LLM support), <strong>Triton</strong> (industrial-strength GPU serving with dynamic batching), and <strong>vLLM</strong> (the LLM standard, whose PagedAttention enables continuous batching).</p>
+  <p><strong>Batch serving</strong> processes a dataset on a schedule, no latency pressure — right for churn scores computed nightly. Often far cheaper than GPU inference. The common mistake is defaulting to online "because it's modern"; batch is the cheaper, correct answer for a large fraction of use cases.</p>
+  <p><strong>Streaming serving</strong> consumes events from Kafka and publishes predictions continuously — fraud detection, real-time moderation, IoT anomalies. The challenge is memory: models must fit the stream processor's executor and can't hot-reload without disruption.</p>
+  <hr>
+
+  <h2>Deployment Strategies: Limiting the Blast Radius</h2>
+  <p>Every deployment is a risk — a model that aced your eval set can misbehave on full production traffic.</p>
+  <p><strong>Blue-green</strong> keeps two identical environments and switches traffic atomically — instant rollback, but double the infrastructure during deployment. <strong>Canary</strong> routes a growing slice (5% → 25% → …) to the new model while monitoring each stage — the most common strategy: limited blast radius, real traffic for evaluation, no double infrastructure. <strong>Shadow</strong> sends all traffic to the new model but serves none of its predictions — zero user risk, complete comparison data, but expensive and slow.</p>
+
+  <div class="diagram">
+    <script type="text/mermaid">
+flowchart LR
+    Traffic --> V1["Model v1 (95%)"]
+    Traffic --> V2["Model v2 (5%)"]
+    V1 --> Metrics
+    V2 --> Metrics
+    Metrics -->|Stable| Promote["Increase to 25%"]
+    Metrics -->|Degraded| Rollback[Rollback to v1]
+    </script>
+    <div class="diagram-svg"></div>
+  </div>
+  <hr>
+
+  <h2>The Silent Failure Problem</h2>
+  <p>Take this seriously: 91% of ML models degrade over time, and 73% of production AI failures link to unforeseen input shifts. "Silent" is what makes it dangerous — unlike a crash, a degrading model produces normal-looking outputs. No alert fires. It just gets quietly wronger.</p>
+  <p><strong>Case study.</strong> A bank trained a credit model on 2021–2023 data; validation accuracy 95%. Deployed January 2024. By September, accuracy had dropped to 87% — missing 8% more defaults. Interest rates had risen sharply; debt-to-income and savings distributions shifted; the model learned a low-rate world and applied it in a high-rate one. No code changed. It just stopped being right.</p>
+
+  <h3>Data Drift vs. Concept Drift</h3>
+  <p><strong>Data drift</strong> is when feature distributions shift from training. Detect by comparing against baselines: KS test (continuous), Chi-square (categorical), Population Stability Index (PSI &gt; 0.25 flags meaningful drift). <strong>Concept drift</strong> is when the input-output relationship itself changes — what counted as fraud in 2023 differs in 2024. Harder to detect because it needs labels; for delayed feedback, collect labels after the fact and evaluate on a rolling window, triggering retraining when metrics fall below threshold.</p>
+
+  <h3>What Monitoring Actually Looks Like</h3>
+  <p>Three layers, all necessary. <strong>Infrastructure</strong>: latency (P50/P95/P99), throughput, error rates, GPU/memory — Prometheus + Grafana, or Datadog. <strong>Model health</strong>: prediction distributions, per-feature drift, input quality, confidence — EvidentlyAI, Arize, WhyLabs. <strong>Business metrics</strong>: the downstream number the model should move (CTR, conversion, default rate). Infra and model metrics can look fine while the business metric declines — always trace changes to outcomes.</p>
+
+  <div class="diagram">
+    <script type="text/mermaid">
+flowchart TD
+    Infra[Infrastructure Layer] --> Alerts
+    Model[Model Health Layer] --> Alerts
+    Biz[Business Metrics Layer] --> Alerts
+    Alerts --> Oncall[On-Call Response]
+    </script>
+    <div class="diagram-svg"></div>
+  </div>
+
+  <h3>Closing the Feedback Loop</h3>
+  <p>Monitoring without retraining is just observability. Fully automating this loop — including evaluation and deployment — is <strong>continuous training (CT)</strong>. It requires automated eval harnesses (slice-based, not just aggregate accuracy), deployment pipelines, and alerting that distinguishes "degraded naturally, retraining underway" from "something is broken, page on-call."</p>
+
+  <div class="diagram">
+    <script type="text/mermaid">
+flowchart LR
+    Prod[Production] --> Labels[Collect Labels]
+    Labels --> Eval[Rolling Evaluation]
+    Eval -->|Drift detected| Retrain[Retrain Model]
+    Retrain --> AutoEval[Automated Eval Suite]
+    AutoEval -->|Pass| Deploy[Canary Deploy]
+    AutoEval -->|Fail| Alert[Page On-Call]
+    Deploy --> Prod
+    </script>
+    <div class="diagram-svg"></div>
+  </div>
+  <hr>
+
+  <h2>Explainability: The Accountability Layer</h2>
+  <p>In regulated domains — lending, hiring, healthcare, insurance — "why did the model predict this?" is a legal requirement. <strong>SHAP</strong> is the most theoretically grounded, assigning each feature a game-theoretic contribution. Model-agnostic but expensive for large ensembles. <strong>LIME</strong> trains a simple local surrogate — faster but less consistent. For LLMs, explainability means which retrieved chunks influenced the answer and whether output is grounded in context.</p>
+  <p>A practical pattern: compute SHAP for high-risk predictions only, store them in the audit log, and surface them to human reviewers — satisfying audits without adding serving latency.</p>
+  <hr>
+
+  <h2>The Monitoring Trap</h2>
+  <p>Teams either monitor too much (40 metrics nobody reads) or too little (just latency). The pragmatic start: <strong>PSI for your top 10 features</strong> (daily), <strong>performance on a rolling 7-day labeled window</strong>, and <strong>P99 latency per model version</strong>. Monitor those three reliably and you'll catch 80% of problems. The goal isn't maximum observability — it's <em>actionable</em> observability, where every alert has an owner and a documented response.</p>
+
+  <div class="series-nav">
+    <p>← <a href="/blog/ml-data-and-training.html">Part 2 — From Raw Data to Trained Model</a></p>
+    <p>Next: <a href="/blog/advanced-ai-architectures.html">Part 4 — Advanced AI Architectures →</a></p>
+  </div>
+
+  <div class="sources">
+    <p class="sources-title">Sources</p>
+    <ul>
+      <li><a href="https://www.articsledge.com/post/model-drift" target="_blank" rel="noopener">What Is Model Drift? Detection, Prevention &amp; Real Examples</a></li>
+      <li><a href="https://agility-at-scale.com/ai/generative/continuous-evaluation-and-drift-monitoring/" target="_blank" rel="noopener">AI Model Drift Monitoring: Enterprise Guide to Continuous Evaluation</a></li>
+      <li><a href="https://galileo.ai/blog/ml-model-monitoring" target="_blank" rel="noopener">A Guide to ML Model Monitoring to Prevent Production Disasters</a></li>
+      <li><a href="https://ambacia.eu/careers-post/why-your-ml-model-fails-in-production/" target="_blank" rel="noopener">Why Your ML Model Fails in Production</a></li>
+      <li><a href="https://orq.ai/blog/model-vs-data-drift" target="_blank" rel="noopener">Understanding Model Drift and Data Drift in LLMs</a></li>
+      <li><a href="https://stackpulsar.com/blog/llm-model-drift-detection/" target="_blank" rel="noopener">LLM Model Drift Detection 2026</a></li>
+    </ul>
+  </div>
+</article>
+
+<nav class="post-nav">
+  <a href="/blog/ml-data-and-training.html">
+    <span class="nav-label">Previous</span>
+    ← From Raw Data to Trained Model
+  </a>
+  <a href="/blog/advanced-ai-architectures.html" class="nav-next">
+    <span class="nav-label">Next</span>
+    Advanced AI Architectures →
+  </a>
+</nav>
+
+</div>
+<script type="module" src="/blog/post.js"></script>
+</body>
+</html>

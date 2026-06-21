@@ -1,0 +1,1143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>30-Day AI Engineer Roadmap </title>
+<style>
+  @font-face {
+    font-family: 'Geist';
+    src: url('/fonts/GeistSans-Variable.woff2') format('woff2');
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: 'Geist Mono';
+    src: url('/fonts/GeistMono-Variable.woff2') format('woff2');
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: swap;
+  }
+</style>
+<style>
+  :root {
+    --bg: #0d0f14; --surface: #13161f; --surface2: #1a1e2a;
+    --border: rgba(255,255,255,0.07); --border2: rgba(255,255,255,0.12);
+    --text: #e8eaf0; --muted: #7a8099; --dim: #454a60;
+    --accent: #4f8ef7; --teal: #2dd4a0; --amber: #f5a623; --coral: #f06060; --purple: #a78bfa; --green: #4ade80;
+    --w0: #94a3b8; --w1: #4f8ef7; --w2: #a78bfa; --w3: #2dd4a0; --w4: #f5a623; --w5: #f06060;
+  }
+  body.light {
+    --bg: #fafaf7; --surface: #ffffff; --surface2: #f1f1ec;
+    --border: rgba(0,0,0,0.08); --border2: rgba(0,0,0,0.15);
+    --text: #1a1d24; --muted: #5b6478; --dim: #8a93a8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { background: var(--bg); color: var(--text); font-family: 'Geist', sans-serif; font-size: 15px; line-height: 1.7; transition: background 0.2s, color 0.2s; }
+  .hero { padding: 60px 48px 40px; max-width: 1000px; margin: 0 auto; position: relative; }
+  .hero::before { content: ''; position: absolute; top: 0; left: -20%; width: 600px; height: 400px; background: radial-gradient(ellipse at 30% 40%, rgba(79,142,247,0.08) 0%, transparent 70%); pointer-events: none; }
+  .hero-top { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px; margin-bottom: 18px; }
+  .hero-eyebrow { font-family: 'Geist Mono', monospace; font-size: 11px; letter-spacing: 0.14em; color: var(--accent); text-transform: uppercase; }
+  .theme-toggle { background: var(--surface); border: 1px solid var(--border); color: var(--muted); padding: 6px 14px; border-radius: 6px; font-family: 'Geist Mono', monospace; font-size: 11px; cursor: pointer; letter-spacing: 0.06em; }
+  .theme-toggle:hover { color: var(--text); border-color: var(--border2); }
+  .hero h1 { font-family: 'Geist', sans-serif; font-size: clamp(34px, 5vw, 52px); font-weight: 600; line-height: 1.15; margin-bottom: 16px; }
+  .hero h1 em { font-style: italic; color: var(--accent); }
+  .hero-sub { font-size: 16px; color: var(--muted); max-width: 620px; margin-bottom: 28px; line-height: 1.7; }
+  .progress-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px 22px; margin-bottom: 28px; }
+  .progress-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+  .progress-label { font-family: 'Geist Mono', monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+  .progress-stat { font-family: 'Geist', sans-serif; font-size: 22px; }
+  .progress-bar { height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--w1), var(--w2), var(--w3), var(--w4)); border-radius: 3px; transition: width 0.4s; }
+  .progress-meta { display: flex; justify-content: space-between; margin-top: 10px; font-size: 12px; color: var(--muted); }
+  .progress-reset { background: none; border: none; color: var(--dim); font-size: 11px; cursor: pointer; font-family: 'Geist Mono', monospace; }
+  .progress-reset:hover { color: var(--coral); }
+  .week-nav { display: flex; gap: 2px; padding: 0 48px; max-width: 1000px; margin: 0 auto; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--bg); z-index: 100; backdrop-filter: blur(10px); overflow-x: auto; }
+  .nav-tab { padding: 14px 20px; font-size: 13px; font-weight: 500; color: var(--muted); background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; transition: all 0.2s; font-family: 'Geist', sans-serif; margin-bottom: -1px; white-space: nowrap; }
+  .nav-tab:hover { color: var(--text); }
+  .nav-tab.active { color: var(--text); border-bottom-color: var(--week-color, var(--accent)); }
+  .nav-tab[data-week="0"] { --week-color: var(--w0); }
+  .nav-tab[data-week="1"] { --week-color: var(--w1); }
+  .nav-tab[data-week="2"] { --week-color: var(--w2); }
+  .nav-tab[data-week="3"] { --week-color: var(--w3); }
+  .nav-tab[data-week="4"] { --week-color: var(--w4); }
+  .nav-tab[data-week="5"] { --week-color: var(--w5); }
+  .content { max-width: 1000px; margin: 0 auto; padding: 36px 48px 80px; }
+  .week-panel { display: none; }
+  .week-panel.active { display: block; }
+  .week-head { display: flex; align-items: flex-start; gap: 20px; margin-bottom: 28px; padding-bottom: 24px; border-bottom: 1px solid var(--border); }
+  .week-badge { font-family: 'Geist Mono', monospace; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; padding: 4px 10px; border-radius: 4px; border: 1px solid; white-space: nowrap; margin-top: 6px; }
+  .badge-w0 { color: var(--w0); border-color: rgba(148,163,184,0.3); background: rgba(148,163,184,0.08); }
+  .badge-w1 { color: var(--w1); border-color: rgba(79,142,247,0.3); background: rgba(79,142,247,0.08); }
+  .badge-w2 { color: var(--purple); border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.08); }
+  .badge-w3 { color: var(--teal); border-color: rgba(45,212,160,0.3); background: rgba(45,212,160,0.08); }
+  .badge-w4 { color: var(--amber); border-color: rgba(245,166,35,0.3); background: rgba(245,166,35,0.08); }
+  .badge-w5 { color: var(--coral); border-color: rgba(240,96,96,0.3); background: rgba(240,96,96,0.08); }
+  .week-head-text h2 { font-family: 'Geist', sans-serif; font-size: 28px; font-weight: 600; margin-bottom: 6px; }
+  .week-head-text p { font-size: 14px; color: var(--muted); }
+  .pitfall-box { background: rgba(240,96,96,0.05); border: 1px solid rgba(240,96,96,0.2); border-radius: 12px; padding: 16px 20px; margin-bottom: 28px; }
+  .pitfall-box .label { font-family: 'Geist Mono', monospace; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--coral); margin-bottom: 8px; }
+  .pitfall-box ul { list-style: none; }
+  .pitfall-box li { font-size: 13px; color: var(--muted); padding: 4px 0 4px 18px; position: relative; line-height: 1.6; }
+  .pitfall-box li::before { content: '⚠'; position: absolute; left: 0; color: var(--coral); font-size: 11px; top: 6px; }
+  .topics { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 28px; }
+  .pill { font-size: 12px; padding: 5px 12px; border-radius: 20px; border: 1px solid; font-family: 'Geist Mono', monospace; }
+  .pill-gray { color: var(--w0); border-color: rgba(148,163,184,0.25); background: rgba(148,163,184,0.06); }
+  .pill-blue { color: var(--w1); border-color: rgba(79,142,247,0.25); background: rgba(79,142,247,0.06); }
+  .pill-purple { color: var(--purple); border-color: rgba(167,139,250,0.25); background: rgba(167,139,250,0.06); }
+  .pill-teal { color: var(--teal); border-color: rgba(45,212,160,0.25); background: rgba(45,212,160,0.06); }
+  .pill-amber { color: var(--amber); border-color: rgba(245,166,35,0.25); background: rgba(245,166,35,0.06); }
+  .projects-grid { display: flex; flex-direction: column; gap: 16px; margin-bottom: 32px; }
+  .project-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; transition: border-color 0.2s; }
+  .project-card:hover { border-color: var(--border2); }
+  .project-card.done { opacity: 0.65; }
+  .project-card.done .project-name { text-decoration: line-through; }
+  .project-card-header { display: flex; align-items: center; gap: 14px; padding: 16px 20px; cursor: pointer; }
+  .check-box { width: 22px; height: 22px; border: 1.5px solid var(--border2); border-radius: 6px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: all 0.15s; background: transparent; }
+  .check-box:hover { border-color: var(--accent); }
+  .check-box.checked { background: var(--accent); border-color: var(--accent); }
+  .check-box.checked::after { content: '✓'; color: white; font-size: 13px; font-weight: 600; }
+  .day-label { font-family: 'Geist Mono', monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); min-width: 60px; }
+  .project-title-row { flex: 1; }
+  .project-name { font-size: 15px; font-weight: 500; margin-bottom: 4px; }
+  .project-tags { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .tag { font-size: 10px; font-family: 'Geist Mono', monospace; padding: 2px 8px; border-radius: 3px; background: var(--surface2); color: var(--muted); }
+  .time-tag { background: rgba(79,142,247,0.1); color: var(--accent); }
+  .difficulty-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .diff-1 { background: var(--teal); } .diff-2 { background: var(--amber); } .diff-3 { background: var(--coral); }
+  .expand-icon { font-size: 18px; color: var(--dim); transition: transform 0.2s; flex-shrink: 0; }
+  .project-card.open .expand-icon { transform: rotate(180deg); }
+  .project-body { display: none; padding: 4px 20px 22px; border-top: 1px solid var(--border); }
+  .project-card.open .project-body { display: block; padding-top: 18px; }
+  .project-section { margin-bottom: 16px; }
+  .project-section:last-child { margin-bottom: 0; }
+  .section-label { font-family: 'Geist Mono', monospace; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--dim); margin-bottom: 8px; }
+  .project-section > p { font-size: 14px; color: var(--muted); line-height: 1.7; }
+  .step-list { list-style: none; display: flex; flex-direction: column; gap: 6px; counter-reset: step; }
+  .step-list li { font-size: 13px; color: var(--muted); padding-left: 22px; position: relative; line-height: 1.6; counter-increment: step; }
+  .step-list li::before { content: counter(step); position: absolute; left: 0; font-family: 'Geist Mono', monospace; font-size: 10px; color: var(--dim); top: 3px; }
+  .code-block { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; font-family: 'Geist Mono', monospace; font-size: 12px; color: var(--muted); overflow-x: auto; line-height: 1.7; margin-top: 8px; }
+  .code-block .kw { color: var(--accent); } .code-block .str { color: var(--teal); } .code-block .cm { color: var(--dim); }
+  .links-grid { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+  .link-row { display: flex; align-items: flex-start; gap: 10px; padding: 9px 12px; border-radius: 8px; background: var(--surface2); text-decoration: none; border: 1px solid transparent; transition: all 0.15s; }
+  .link-row:hover { border-color: var(--border2); transform: translateX(2px); }
+  .link-type-badge { font-family: 'Geist Mono', monospace; font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; padding: 2px 7px; border-radius: 3px; white-space: nowrap; margin-top: 2px; flex-shrink: 0; min-width: 56px; text-align: center; }
+  .lt-docs { background: rgba(79,142,247,0.15); color: #7ab4f8; }
+  .lt-tutorial { background: rgba(45,212,160,0.15); color: #5ae0b5; }
+  .lt-video { background: rgba(240,96,96,0.15); color: #f08888; }
+  .lt-guide { background: rgba(167,139,250,0.15); color: #c4adfc; }
+  .lt-tool { background: rgba(245,166,35,0.15); color: #f5c263; }
+  .link-text { flex: 1; }
+  .link-name { font-size: 13px; color: var(--text); font-weight: 500; line-height: 1.4; }
+  .link-desc { font-size: 11px; color: var(--muted); margin-top: 1px; }
+  .link-url { font-size: 10px; color: var(--dim); font-family: 'Geist Mono', monospace; margin-top: 2px; }
+  .link-arrow { color: var(--dim); font-size: 14px; margin-top: 2px; flex-shrink: 0; }
+  .stretch-goal { background: rgba(245,166,35,0.06); border: 1px solid rgba(245,166,35,0.18); border-radius: 8px; padding: 12px 14px; margin-top: 14px; }
+  .stretch-goal .section-label { color: var(--amber); margin-bottom: 4px; }
+  .stretch-goal p { font-size: 13px; color: rgba(245,166,35,0.8); }
+  .coach-note { background: rgba(79,142,247,0.05); border-left: 2px solid var(--accent); border-radius: 0 8px 8px 0; padding: 12px 16px; margin-top: 14px; }
+  .coach-note .section-label { color: var(--accent); margin-bottom: 4px; }
+  .coach-note p { font-size: 13px; color: rgba(120,160,240,0.85); }
+  .reflect-box { background: rgba(45,212,160,0.05); border: 1px solid rgba(45,212,160,0.2); border-radius: 10px; padding: 14px 18px; margin-top: 24px; }
+  .reflect-box .label { font-family: 'Geist Mono', monospace; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--teal); margin-bottom: 8px; }
+  .reflect-box p { font-size: 13px; color: var(--muted); font-style: italic; line-height: 1.7; }
+  .milestone { background: linear-gradient(135deg, var(--surface) 0%, var(--surface2) 100%); border: 1px solid var(--border2); border-radius: 12px; padding: 24px 26px; margin-top: 28px; position: relative; overflow: hidden; }
+  .milestone::before { content: ''; position: absolute; top: 0; right: 0; width: 200px; height: 200px; background: radial-gradient(ellipse at 80% 20%, var(--accent-week, rgba(79,142,247,0.12)) 0%, transparent 70%); pointer-events: none; }
+  .milestone-label { font-family: 'Geist Mono', monospace; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+  .milestone h3 { font-family: 'Geist', sans-serif; font-size: 20px; font-weight: 600; margin-bottom: 8px; }
+  .milestone p { font-size: 14px; color: var(--muted); line-height: 1.7; }
+  .glossary-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+  .gloss-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  .gloss-term { font-size: 14px; font-weight: 500; color: var(--text); margin-bottom: 4px; font-family: 'Geist Mono', monospace; }
+  .gloss-def { font-size: 12px; color: var(--muted); line-height: 1.6; }
+  .community-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+  .comm-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 8px; text-decoration: none; transition: all 0.15s; }
+  .comm-card:hover { border-color: var(--border2); transform: translateY(-2px); }
+  .comm-name { font-size: 14px; font-weight: 500; color: var(--text); }
+  .comm-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
+  .comm-link { font-size: 11px; color: var(--accent); font-family: 'Geist Mono', monospace; margin-top: 4px; }
+  .interview-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin-bottom: 12px; }
+  .interview-q { font-size: 14px; font-weight: 500; color: var(--text); margin-bottom: 8px; }
+  .interview-a { font-size: 13px; color: var(--muted); line-height: 1.7; }
+  .interview-a strong { color: var(--accent); font-weight: 500; }
+  .sec-h { font-family: 'Geist', sans-serif; font-size: 22px; font-weight: 600; margin: 32px 0 16px; }
+  .sec-intro { font-size: 14px; color: var(--muted); margin-bottom: 20px; line-height: 1.7; max-width: 700px; }
+  .setup-step { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px 22px; margin-bottom: 14px; }
+  .setup-step-head { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
+  .setup-num { width: 28px; height: 28px; border-radius: 50%; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-family: 'Geist Mono', monospace; font-size: 12px; font-weight: 500; color: var(--accent); flex-shrink: 0; }
+  .setup-title { font-size: 15px; font-weight: 500; }
+  .setup-time { margin-left: auto; font-family: 'Geist Mono', monospace; font-size: 10px; color: var(--muted); letter-spacing: 0.06em; }
+  .setup-step p { font-size: 13px; color: var(--muted); line-height: 1.7; margin-bottom: 10px; }
+  .setup-step ul { list-style: none; padding-left: 0; }
+  .setup-step li { font-size: 13px; color: var(--muted); padding: 4px 0 4px 20px; position: relative; line-height: 1.6; }
+  .setup-step li::before { content: '›'; position: absolute; left: 4px; color: var(--accent); font-size: 11px; top: 6px; }
+  .cost-panel { background: linear-gradient(135deg, rgba(245,166,35,0.08), rgba(245,166,35,0.02)); border: 1px solid rgba(245,166,35,0.25); border-radius: 12px; padding: 20px 22px; margin-bottom: 20px; }
+  .cost-panel-title { font-family: 'Geist Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--amber); margin-bottom: 12px; }
+  .cost-rows { display: flex; flex-direction: column; gap: 8px; }
+  .cost-row { display: flex; justify-content: space-between; font-size: 13px; padding: 6px 0; border-bottom: 1px dashed rgba(245,166,35,0.15); }
+  .cost-row:last-child { border-bottom: none; font-weight: 500; padding-top: 10px; }
+  .cost-row span:first-child { color: var(--muted); }
+  .cost-row span:last-child { color: var(--text); font-family: 'Geist Mono', monospace; }
+  footer { border-top: 1px solid var(--border); padding: 28px 48px; max-width: 1000px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+  footer p { font-size: 12px; color: var(--dim); }
+  ::-webkit-scrollbar { width: 6px; height: 6px; } ::-webkit-scrollbar-track { background: var(--bg); } ::-webkit-scrollbar-thumb { background: var(--dim); border-radius: 3px; }
+  @media (max-width: 720px) {
+    .hero, .week-nav, .content, footer { padding-left: 20px; padding-right: 20px; }
+    .week-head { flex-direction: column; gap: 12px; }
+    .project-card-header { flex-wrap: wrap; }
+    .nav-tab { padding: 12px 14px; font-size: 12px; }
+  }
+</style>
+</head>
+<body class="light">
+
+<div class="hero">
+  <div style="margin-bottom:12px;">
+    <a href="/" style="font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.08em; color:var(--muted); text-decoration:none; display:inline-flex; align-items:center; gap:6px; transition:color 0.15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">← home</a>
+  </div>
+  <div class="hero-top">
+    <p class="hero-eyebrow">// 30-day plan · beginner-tuned · with progress tracking</p>
+    <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">☀ DARK</button>
+  </div>
+  <h1>Build your way to becoming<br>an <em>AI Engineer</em></h1>
+  <p class="hero-sub">Project-first. Every topic paired with something you ship. Tuned for Python beginners — Week 1 starts with fundamentals before touching AI. Budget 4–6 focused hours a day. Progress saves to your browser.</p>
+
+  <div class="progress-wrap">
+    <div class="progress-top">
+      <span class="progress-label">Your progress</span>
+      <span class="progress-stat" id="progStat">0 / 16</span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="progFill" style="width:0%;"></div></div>
+    <div class="progress-meta">
+      <span id="progPct">0% complete · Day 0 mindset</span>
+      <button class="progress-reset" onclick="resetProgress()">↺ Reset</button>
+    </div>
+  </div>
+</div>
+
+<nav class="week-nav">
+  <button class="nav-tab active" data-week="0" onclick="showWeek(0, this)">Day 0 — Setup</button>
+  <button class="nav-tab" data-week="1" onclick="showWeek(1, this)">Week 1 — APIs &amp; Python</button>
+  <button class="nav-tab" data-week="2" onclick="showWeek(2, this)">Week 2 — Prompting &amp; Embeddings</button>
+  <button class="nav-tab" data-week="3" onclick="showWeek(3, this)">Week 3 — RAG Pipelines</button>
+  <button class="nav-tab" data-week="4" onclick="showWeek(4, this)">Week 4 — Agents &amp; Evals</button>
+  <button class="nav-tab" data-week="5" onclick="showWeek(5, this)">Resources &amp; Next Steps</button>
+</nav>
+
+<div class="content">
+
+<!-- DAY 0 -->
+<div class="week-panel active" id="week-0">
+  <div class="week-head">
+    <span class="week-badge badge-w0">Day 0 · Setup</span>
+    <div class="week-head-text">
+      <h2>Before you start: get your environment right</h2>
+      <p>Block 2–3 hours for this. Skipping setup means hitting walls on Day 1 that have nothing to do with AI.</p>
+    </div>
+  </div>
+
+  <div class="pitfall-box">
+    <p class="label">Avoid these Day-0 mistakes</p>
+    <ul>
+      <li>Skipping the virtual environment — you'll fight version conflicts all month</li>
+      <li>Hardcoding API keys in your code instead of <code>.env</code> files</li>
+      <li>Pushing to a public GitHub repo with your API key still in it (this is a common, expensive mistake)</li>
+      <li>Using Python 3.8 or earlier — async patterns and type hints behave differently</li>
+    </ul>
+  </div>
+
+  <div class="cost-panel">
+    <p class="cost-panel-title">// Expected API costs for the month</p>
+    <div class="cost-rows">
+      <div class="cost-row"><span>Week 1 (chatbots, tool use, mostly Haiku)</span><span>~₹200–400</span></div>
+      <div class="cost-row"><span>Week 2 (embeddings run locally — free; small generation)</span><span>~₹100–200</span></div>
+      <div class="cost-row"><span>Week 3 (RAG, more generation, reranking is free)</span><span>~₹400–800</span></div>
+      <div class="cost-row"><span>Week 4 (agents have loops, evals are expensive)</span><span>~₹700–1500</span></div>
+      <div class="cost-row"><span><strong>Total estimated</strong></span><span><strong>₹1,400–2,900</strong></span></div>
+    </div>
+    <p style="font-size:12px; color:var(--muted); margin-top:12px; line-height:1.6;">Use Claude Haiku for 90% of testing — it's roughly 1/12th the cost of Sonnet. Enable prompt caching on long system prompts. Anthropic gives free credits on signup.</p>
+  </div>
+
+  <h3 class="sec-h">The 6 setup steps</h3>
+
+  <div class="setup-step">
+    <div class="setup-step-head"><div class="setup-num">1</div><div class="setup-title">Install Python 3.11+</div><span class="setup-time">~10 min</span></div>
+    <p>You need Python 3.11 or newer for proper async support, modern type hints, and library compatibility.</p>
+    <div class="links-grid">
+      <a class="link-row" href="https://www.python.org/downloads/" target="_blank"><span class="link-type-badge lt-docs">Install</span><div class="link-text"><p class="link-name">Python.org — Official download</p><p class="link-desc">Pick 3.11 or 3.12. Don't install via Microsoft Store on Windows — use the python.org installer.</p></div><span class="link-arrow">→</span></a>
+      <a class="link-row" href="https://realpython.com/intro-to-pyenv/" target="_blank"><span class="link-type-badge lt-tutorial">Tutorial</span><div class="link-text"><p class="link-name">Managing multiple Python versions with pyenv</p><p class="link-desc">Real Python's guide. Use this if you also write code in other Python versions.</p></div><span class="link-arrow">→</span></a>
+    </div>
+  </div>
+
+  <div class="setup-step">
+    <div class="setup-step-head"><div class="setup-num">2</div><div class="setup-title">Set up a code editor</div><span class="setup-time">~15 min</span></div>
+    <p>VS Code is the easiest, free option. Install the Python extension and the Pylance type checker.</p>
+    <div class="links-grid">
+      <a class="link-row" href="https://code.visualstudio.com/" target="_blank"><span class="link-type-badge lt-tool">Tool</span><div class="link-text"><p class="link-name">VS Code — Free download</p><p class="link-desc">The most popular editor for Python &amp; AI work.</p></div><span class="link-arrow">→</span></a>
+      <a class="link-row" href="https://www.cursor.com/" target="_blank"><span class="link-type-badge lt-tool">Tool</span><div class="link-text"><p class="link-name">Cursor — AI-native code editor</p><p class="link-desc">VS Code fork with built-in AI assistance. Great for AI engineering.</p></div><span class="link-arrow">→</span></a>
+    </div>
+  </div>
+
+  <div class="setup-step">
+    <div class="setup-step-head"><div class="setup-num">3</div><div class="setup-title">Get an Anthropic API key</div><span class="setup-time">~10 min</span></div>
+    <p>Sign up at console.anthropic.com, add a payment method, generate an API key. Treat the key like a password — never commit it to Git.</p>
+    <div class="links-grid">
+      <a class="link-row" href="https://console.anthropic.com/" target="_blank"><span class="link-type-badge lt-docs">Console</span><div class="link-text"><p class="link-name">Anthropic Console — Sign up &amp; get API key</p><p class="link-desc">Click "API Keys" in the sidebar. Save the key — Anthropic only shows it once.</p></div><span class="link-arrow">→</span></a>
+      <a class="link-row" href="https://docs.anthropic.com/en/api/getting-started" target="_blank"><span class="link-type-badge lt-docs">Docs</span><div class="link-text"><p class="link-name">Anthropic — Getting Started</p><p class="link-desc">First API call in 5 minutes.</p></div><span class="link-arrow">→</span></a>
+    </div>
+  </div>
+
+  <div class="setup-step">
+    <div class="setup-step-head"><div class="setup-num">4</div><div class="setup-title">Set up Git &amp; GitHub</div><span class="setup-time">~20 min</span></div>
+    <p>You'll push your work to GitHub every week.</p>
+    <div class="links-grid">
+      <a class="link-row" href="https://github.com/" target="_blank"><span class="link-type-badge lt-docs">Sign up</span><div class="link-text"><p class="link-name">GitHub — Create account</p><p class="link-desc">Pick a username you'd put on a resume.</p></div><span class="link-arrow">→</span></a>
+      <a class="link-row" href="https://docs.github.com/en/get-started/quickstart/hello-world" target="_blank"><span class="link-type-badge lt-tutorial">Tutorial</span><div class="link-text"><p class="link-name">GitHub Hello World — Official 10-min quickstart</p></div><span class="link-arrow">→</span></a>
+    </div>
+  </div>
+
+  <div class="setup-step">
+    <div class="setup-step-head"><div class="setup-num">5</div><div class="setup-title">Create your project folder</div><span class="setup-time">~15 min</span></div>
+    <p>One folder for the entire month. Subfolders per week. Initialize a single git repo at the root.</p>
+    <div class="code-block">
+<span class="cm"># Create the structure</span>
+mkdir ai-engineer-30days &amp;&amp; cd ai-engineer-30days
+git init
+python3.11 -m venv .venv
+source .venv/bin/activate  <span class="cm"># Windows: .venv\Scripts\activate</span>
+
+<span class="cm"># Create files</span>
+touch .gitignore .env .env.example README.md
+echo <span class="str">".venv/\n.env\n__pycache__/\n*.pyc"</span> &gt; .gitignore
+echo <span class="str">"ANTHROPIC_API_KEY=your_key_here"</span> &gt; .env.example
+
+<span class="cm"># Install core deps</span>
+pip install anthropic python-dotenv pydantic
+
+<span class="cm"># First commit</span>
+git add . &amp;&amp; git commit -m <span class="str">"initial setup"</span>
+    </div>
+  </div>
+
+  <div class="setup-step">
+    <div class="setup-step-head"><div class="setup-num">6</div><div class="setup-title">Verify everything works</div><span class="setup-time">~5 min</span></div>
+    <p>Make one API call from a Python script. If this works, you're ready for Day 1.</p>
+    <div class="code-block">
+<span class="cm"># test.py</span>
+<span class="kw">import</span> os
+<span class="kw">from</span> dotenv <span class="kw">import</span> load_dotenv
+<span class="kw">from</span> anthropic <span class="kw">import</span> Anthropic
+
+load_dotenv()
+client = Anthropic(api_key=os.getenv(<span class="str">"ANTHROPIC_API_KEY"</span>))
+
+response = client.messages.create(
+    model=<span class="str">"claude-haiku-4-5-20251001"</span>,
+    max_tokens=100,
+    messages=[{<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: <span class="str">"Reply with: 'Setup complete.'"</span>}]
+)
+print(response.content[0].text)
+    </div>
+    <p style="margin-top:10px; color:var(--teal);">If you see <code>Setup complete.</code> — you're ready.</p>
+  </div>
+
+  <div class="coach-note">
+    <p class="section-label">Day 0 coach note</p>
+    <p>Yes, setup is boring. But every hour you spend on a clean Day 0 saves three hours during the month.</p>
+  </div>
+</div>
+
+<!-- WEEK 1 -->
+<div class="week-panel" id="week-1">
+  <div class="week-head">
+    <span class="week-badge badge-w1">Week 1 · Days 1–7</span>
+    <div class="week-head-text">
+      <h2>Python foundations &amp; LLM API fluency</h2>
+      <p>Start with Python fundamentals, then get comfortable with the Anthropic SDK, streaming, tool calling, and prompt caching.</p>
+    </div>
+  </div>
+
+  <div class="pitfall-box">
+    <p class="label">Common Week 1 pitfalls</p>
+    <ul>
+      <li>Trying to learn async before the basics — build the synchronous client first; async is a stretch goal</li>
+      <li>Forgetting prompt caching on long system prompts — costs 90% more than it should</li>
+      <li>Not handling streaming errors — half a response is worse than a clear failure</li>
+      <li>Using Sonnet for everything during development — switch to Haiku to save costs while learning</li>
+    </ul>
+  </div>
+
+  <div class="topics">
+    <span class="pill pill-blue">Python basics</span><span class="pill pill-blue">type hints</span><span class="pill pill-blue">Anthropic SDK</span><span class="pill pill-blue">system prompts</span><span class="pill pill-blue">function calling</span><span class="pill pill-blue">streaming</span><span class="pill pill-blue">prompt caching</span><span class="pill pill-blue">token budgets</span>
+  </div>
+
+  <div class="projects-grid">
+
+    <div class="project-card" data-id="p0">
+      <div class="project-card-header">
+        <div class="check-box" onclick="toggleCheck(event, 'p0')"></div>
+        <div onclick="toggle('p0')" style="display:flex; align-items:center; gap:14px; flex:1; cursor:pointer;">
+          <span class="day-label">Day 1–2</span>
+          <div class="project-title-row">
+            <p class="project-name">Python crash course — only the parts you'll actually use</p>
+            <div class="project-tags"><span class="tag time-tag">⏱ 8–10 hrs</span><span class="tag">functions &amp; dicts</span><span class="tag">classes</span><span class="tag">file I/O</span></div>
+          </div>
+          <span class="difficulty-dot diff-1"></span><span class="expand-icon">⌾</span>
+        </div>
+      </div>
+      <div class="project-body">
+        <div class="project-section"><p class="section-label">What you're building</p><p>A small CLI flashcard-quiz app that exercises every Python concept this month depends on: variables, lists/dicts, loops, functions, classes, exceptions, file I/O, and installing a pip package. No AI yet — on purpose.</p></div>
+        <div class="project-section"><p class="section-label">Study first</p>
+          <div class="links-grid">
+            <a class="link-row" href="https://docs.python.org/3/tutorial/" target="_blank"><span class="link-type-badge lt-docs">Docs</span><div class="link-text"><p class="link-name">Official Python Tutorial — sections 3–9</p></div><span class="link-arrow">→</span></a>
+            <a class="link-row" href="https://www.youtube.com/watch?v=rfscVS0vtbw" target="_blank"><span class="link-type-badge lt-video">Video</span><div class="link-text"><p class="link-name">freeCodeCamp — Python for Beginners (4 hrs)</p><p class="link-desc">Watch at 1.5× speed. Code along — don't just watch.</p></div><span class="link-arrow">→</span></a>
+            <a class="link-row" href="https://www.practicepython.org/" target="_blank"><span class="link-type-badge lt-tutorial">Practice</span><div class="link-text"><p class="link-name">Practice Python — beginner exercises</p></div><span class="link-arrow">→</span></a>
+          </div>
+        </div>
+        <div class="project-section"><p class="section-label">Build steps</p>
+          <ol class="step-list">
+            <li>Work through: variables, strings, lists, dicts, loops, functions</li>
+            <li>Then: classes &amp; dataclasses, <code>try/except</code>, <code>with open()</code> file handling</li>
+            <li>Build the quiz app: load Q&amp;A pairs from a JSON file, ask, track score</li>
+            <li>Add a <code>QuizSession</code> class; raise and handle one custom exception</li>
+            <li>Install one pip package (<code>rich</code>) and use it for colored output</li>
+          </ol>
+        </div>
+        <div class="coach-note"><p class="section-label">Coach note</p><p>Don't aim for mastery — aim for "can read and modify code without panic."</p></div>
+      </div>
+    </div>
+
+    <div class="project-card" data-id="p1">
+      <div class="project-card-header">
+        <div class="check-box" onclick="toggleCheck(event, 'p1')"></div>
+        <div onclick="toggle('p1')" style="display:flex; align-items:center; gap:14px; flex:1; cursor:pointer;">
+          <span class="day-label">Day 3–4</span>
+          <div class="project-title-row">
+            <p class="project-name">LLM client wrapper (sync first, async stretch)</p>
+            <div class="project-tags"><span class="tag time-tag">⏱ 4–6 hrs</span><span class="tag">classes</span><span class="tag">retry logic</span></div>
+          </div>
+          <span class="difficulty-dot diff-1"></span><span class="expand-icon">⌾</span>
+        </div>
+      </div>
+      <div class="project-body">
+        <div class="project-section"><p class="section-label">What you're building</p><p>A reusable Python class wrapping the Anthropic SDK with retry logic and token tracking. Base layer for every project this month.</p></div>
+        <div class="project-section"><p class="section-label">Build steps</p>
+          <ol class="step-list">
+            <li>Create a <code>LLMClient</code> dataclass with <code>model</code>, <code>max_tokens</code>, <code>temperature</code></li>
+            <li>Write <code>complete(messages)</code> using the synchronous <code>anthropic.Anthropic</code> client</li>
+            <li>Add retry: 3 attempts with exponential backoff on <code>RateLimitError</code></li>
+            <li>Add a token counter for input/output tokens with session summary</li>
+            <li>Test with 3 different prompts; print the token/cost summary at exit</li>
+          </ol>
+        </div>
+        <div class="stretch-goal"><p class="section-label">Stretch goal</p><p>Convert to async with <code>anthropic.AsyncAnthropic</code> and run 3 concurrent calls via <code>asyncio.gather()</code>.</p></div>
+      </div>
+    </div>
+
+    <div class="project-card" data-id="p2">
+      <div class="project-card-header">
+        <div class="check-box" onclick="toggleCheck(event, 'p2')"></div>
+        <div onclick="toggle('p2')" style="display:flex; align-items:center; gap:14px; flex:1; cursor:pointer;">
+          <span class="day-label">Day 5</span>
+          <div class="project-title-row">
+            <p class="project-name">Persona chatbot with context summarisation + prompt caching</p>
+            <div class="project-tags"><span class="tag time-tag">⏱ 4–5 hrs</span><span class="tag">system prompts</span><span class="tag">prompt caching</span></div>
+          </div>
+          <span class="difficulty-dot diff-1"></span><span class="expand-icon">⌾</span>
+        </div>
+      </div>
+      <div class="project-body">
+        <div class="project-section"><p class="section-label">What you're building</p><p>A CLI chatbot with multi-turn history, a detailed persona, automatic context summarisation, and prompt caching on the system prompt (huge cost saver).</p></div>
+        <div class="project-section"><p class="section-label">Build steps</p>
+          <ol class="step-list">
+            <li>Build on <code>LLMClient</code>. Add <code>ConversationManager</code> with a message list.</li>
+            <li>Write a 100+ word system prompt — define persona, tone, expertise, reply style.</li>
+            <li>Add <code>cache_control</code> to the system prompt block (this is the big cost win).</li>
+            <li>REPL loop: read → append → call API → print → repeat.</li>
+            <li>Token guard: if history &gt; 3000 tokens, ask the model to summarise the first half.</li>
+            <li>Add <code>/clear</code>, <code>/tokens</code>, <code>/cache</code> commands.</li>
+          </ol>
+        </div>
+        <div class="coach-note"><p class="section-label">Coach note</p><p>Prompt caching is the single most undervalued cost lever for AI engineers. Use it on every long system prompt going forward.</p></div>
+      </div>
+    </div>
+
+    <div class="project-card" data-id="p3">
+      <div class="project-card-header">
+        <div class="check-box" onclick="toggleCheck(event, 'p3')"></div>
+        <div onclick="toggle('p3')" style="display:flex; align-items:center; gap:14px; flex:1; cursor:pointer;">
+          <span class="day-label">Day 6</span>
+          <div class="project-title-row">
+            <p class="project-name">Chatbot with real tool use</p>
+            <div class="project-tags"><span class="tag time-tag">⏱ 5–6 hrs</span><span class="tag">function calling</span><span class="tag">parallel tools</span></div>
+          </div>
+          <span class="difficulty-dot diff-2"></span><span class="expand-icon">⌾</span>
+        </div>
+      </div>
+      <div class="project-body">
+        <div class="project-section"><p class="section-label">What you're building</p><p>Extend your chatbot with 3 tools: calculator, datetime lookup, mock DB query. The model decides which to call.</p></div>
+        <div class="project-section"><p class="section-label">Build steps</p>
+          <ol class="step-list">
+            <li>Define 3 tool schemas: <code>name</code>, <code>description</code>, <code>input_schema</code></li>
+            <li>Check <code>response.stop_reason == "tool_use"</code>; parse the <code>tool_use</code> block</li>
+            <li>Dispatch to your Python function; append result to history</li>
+            <li>Make a second API call to get the final answer; stream it</li>
+            <li>Handle parallel tool calls — the model may invoke multiple in one turn</li>
+          </ol>
+        </div>
+        <div class="coach-note"><p class="section-label">Coach note</p><p>This call → tool result → call pattern is exactly what agents do in a loop. Master it small first.</p></div>
+      </div>
+    </div>
+
+    <div class="project-card" data-id="p4">
+      <div class="project-card-header">
+        <div class="check-box" onclick="toggleCheck(event, 'p4')"></div>
+        <div onclick="toggle('p4')" style="display:flex; align-items:center; gap:14px; flex:1; cursor:pointer;">
+          <span class="day-label">Day 7</span>
+          <div class="project-title-row">
+            <p class="project-name">Week 1 capstone — polished CLI on GitHub</p>
+            <div class="project-tags"><span class="tag time-tag">⏱ 4–5 hrs</span><span class="tag">packaging</span><span class="tag">README</span></div>
+          </div>
+          <span class="difficulty-dot diff-2"></span><span class="expand-icon">⌾</span>
+        </div>
+      </div>
+      <div class="project-body">
+        <div class="project-section"><p class="section-label">What you're building</p><p>Combine Week 1 into a clean, packaged CLI assistant with README and demo gif. Portfolio piece #1.</p></div>
+        <div class="project-section"><p class="section-label">Checklist</p>
+          <ol class="step-list">
+            <li>Clean package structure: <code>src/client.py</code>, <code>src/tools.py</code>, <code>src/chat.py</code></li>
+            <li><code>pyproject.toml</code> with pinned deps; <code>.env.example</code></li>
+            <li>README: what it does, install, example conversation</li>
+            <li><code>--model</code> CLI flag for Haiku/Sonnet</li>
+            <li>Push to GitHub + <code>demo.gif</code></li>
+          </ol>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="reflect-box">
+    <p class="label">// End-of-week reflection (5 min)</p>
+    <p>"What was the single biggest 'aha' moment this week? Which concept still feels fuzzy?"</p>
+  </div>
+
+  <div class="milestone" style="--accent-week: rgba(79,142,247,0.12);">
+    <p class="milestone-label">// Week 1 milestone</p>
+    <h3>Working async, tool-calling, cost-optimised CLI on GitHub</h3>
+    <p>Retries, conversation history with summarisation, real tool calling, streaming, token tracking, prompt caching.</p>
+  </div>
+</div>
+
+<!-- WEEK 2 -->
+<div class="week-panel" id="week-2">
+  <div class="week-head">
+    <span class="week-badge badge-w2">Week 2 · Days 8–14</span>
+    <div class="week-head-text">
+      <h2>Prompt engineering, structured outputs &amp; embeddings</h2>
+      <p>Control what models produce. Understand how text becomes numbers. Underpinnings of every RAG and agent system.</p>
+    </div>
+  </div>
+
+  <div class="pitfall-box">
+    <p class="label">Common Week 2 pitfalls</p>
+    <ul>
+      <li>Treating embeddings as a black box — without visual intuition, you can't debug retrieval</li>
+      <li>Parsing JSON from LLMs with regex instead of using Pydantic / Instructor library</li>
+      <li>Re-embedding the same text on every run — embeddings are cacheable</li>
+      <li>Picking a chunking strategy without testing — there is no universal best</li>
+    </ul>
+  </div>
+
+  <div class="topics">
+    <span class="pill pill-purple">CoT prompting</span><span class="pill pill-purple">few-shot</span><span class="pill pill-purple">XML delimiters</span><span class="pill pill-purple">Pydantic / Instructor</span><span class="pill pill-purple">embeddings</span><span class="pill pill-purple">cosine similarity</span><span class="pill pill-purple">ChromaDB</span><span class="pill pill-purple">UMAP visualisation</span>
+  </div>
+
+  <div class="projects-grid">
+
+    <div class="project-card" data-id="p5">
+      <div class="project-card-header">
+        <div class="check-box" onclick="toggleCheck(event, 'p5')"></div>
+        <div onclick="toggle('p5')" style="display:flex; align-items:center; gap:14px; flex:1; cursor:pointer;">
+          <span class="day-label">Day 8–9</span>
+          <div class="project-title-row">
+            <p class="project-name">Structured data extractor (with Pydantic)</p>
+            <div class="project-tags"><span class="tag time-tag">⏱ 5–7 hrs</span><span class="tag">CoT</span><span class="tag">few-shot</span><span class="tag">Pydantic</span></div>
+          </div>
+          <span class="difficulty-dot diff-1"></span><span class="expand-icon">⌾</span>
+        </div>
+      </div>
+      <div class="project-body">
+        <div class="project-section"><p class="section-label">What you're building</p><p>Extract structured JSON from messy text (job listings) using CoT + few-shot + Pydantic validation.</p></div>
+        <div class="project-section"><p class="section-label">Build steps</p>
+          <ol class="step-list">
+            <li>Domain: job listings. Pydantic schema: <code>title, company, salary_range, skills, remote</code></li>
+            <li>Zero-shot prompt. Run 10 real examples. Note failures.</li>
+            <li>Add 3 few-shot examples (normal, missing salary, unusual format). Compare.</li>
+            <li>Add CoT in <code>&lt;thinking&gt;</code>, output in <code>&lt;output&gt;</code>. Parse only output.</li>
+            <li>Validate with Pydantic. Log failures for iteration.</li>
+          </ol>
+        </div>
+        <div class="stretch-goal"><p class="section-label">Stretch goal</p><p>Try the Instructor library — same task, drastically less code.</p></div>
+      </div>
+    </div>
+
+    <div class="project-card" data-id="p6">
+      <div class="project-card-header">
+        <div class="check-box" onclick="toggleCheck(event, 'p6')"></div>
+        <div onclick="toggle('p6')" style="display:flex; align-items:center; gap:14px; flex:1; cursor:pointer;">
+          <span class="day-label">Day 10–11</span>
+          <div class="project-title-row">
+            <p class="project-name">Semantic similarity explorer (with visualisation)</p>
+            <div class="project-tags"><span class="tag time-tag">⏱ 5–6 hrs</span><span class="tag">embeddings</span><span class="tag">cosine</span><span class="tag">UMAP</span></div>
+          </div>
+          <span class="difficulty-dot diff-1"></span><span class="expand-icon">⌾</span>
+        </div>
+      </div>
+      <div class="project-body">
+        <div class="project-section"><p class="section-label">What you're building</p><p>Embed sentences, compute similarity, visually explore the embedding space. Build intuition for what "0.85 vs 0.4" actually means.</p></div>
+        <div class="project-section"><p class="section-label">Build steps</p>
+          <ol class="step-list">
+            <li>Embed 20 sentences locally with <code>SentenceTransformer('all-MiniLM-L6-v2')</code> — free, no API key</li>
+            <li>Compute 20×20 cosine similarity matrix with numpy. Print as colored heatmap.</li>
+            <li>CLI: user types sentence → embed → return top-3 similar with scores</li>
+            <li>Try sentences in different languages — do semantic clusters hold?</li>
+          </ol>
+        </div>
+        <div class="stretch-goal"><p class="section-label">Stretch goal</p><p>Use <code>umap-learn</code> to project to 2D, plot with matplotlib. Can you see clusters?</p></div>
+      </div>
+    </div>
+
+    <div class="project-card" data-id="p7">
+      <div class="project-card-header">
+        <div class="check-box" onclick="toggleCheck(event, 'p7')"></div>
+        <div onclick="toggle('p7')" style="display:flex; align-items:center; gap:14px; flex:1; cursor:pointer;">
+          <span class="day-label">Day 12–14</span>
+          <div class="project-title-row">
+            <p class="project-name">Personal knowledge base search engine</p>
+            <div class="project-tags"><span class="tag time-tag">⏱ 8–10 hrs</span><span class="tag">ChromaDB</span><span class="tag">chunking</span><span class="tag">metadata</span></div>
+          </div>
+          <span class="difficulty-dot diff-2"></span><span class="expand-icon">⌾</span>
+        </div>
+      </div>
+      <div class="project-body">
+        <div class="project-section"><p class="section-label">What you're building</p><p>Ingest your own notes into ChromaDB, build a semantic search CLI. No LLM in the loop — pure retrieval.</p></div>
+        <div class="project-section"><p class="section-label">Build steps</p>
+          <ol class="step-list">
+            <li>Collect 30–80 documents (notes, articles, Wikipedia)</li>
+            <li>Ingestion script: read → split ~500 chars, 50-char overlap → embed → upsert with metadata</li>
+            <li>Query CLI: embed question → <code>collection.query()</code> → show top-5 with scores</li>
+            <li>Experiment chunk sizes 200/500/1000. Note quality differences.</li>
+            <li>Add <code>--filter</code> using ChromaDB <code>where</code> on metadata</li>
+          </ol>
+        </div>
+        <div class="coach-note"><p class="section-label">Coach note</p><p>RAG without generation — deliberately. Most "bad RAG" is bad retrieval. Know retrieval first.</p></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="milestone" style="--accent-week: rgba(167,139,250,0.12);">
+    <p class="milestone-label">// Week 2 milestone</p>
+    <h3>Semantic search engine + extraction pipeline</h3>
+    <p>Structured extraction with Pydantic validation, embedding intuition, vector retrieval with metadata filtering.</p>
+  </div>
+</div>
+
+<!-- WEEK 3 -->
+<div class="week-panel" id="week-3">
+  <div class="week-head">
+    <span class="week-badge badge-w3">Week 3 · Days 15–21</span>
+    <div class="week-head-text">
+      <h2>Production RAG pipelines</h2>
+      <p>From naive 50-line RAG to a production system with hybrid retrieval, reranking, and measured quality.</p>
+    </div>
+  </div>
+
+  <div class="pitfall-box">
+    <p class="label">Common Week 3 pitfalls</p>
+    <ul>
+      <li>Skipping the failure analysis on Day 16 — you'll improve the wrong things</li>
+      <li>Reaching for LangChain too early — build naive RAG without a framework first</li>
+      <li>Optimising the prompt when the real bug is retrieval (or vice versa)</li>
+      <li>Not measuring precision@k — "it feels better" is not engineering</li>
+    </ul>
+  </div>
+
+  <div class="topics">
+    <span class="pill pill-teal">RAG architecture</span><span class="pill pill-teal">chunking lab</span><span class="pill pill-teal">BM25 sparse</span><span class="pill pill-teal">hybrid retrieval</span><span class="pill pill-teal">RRF fusion</span><span class="pill pill-teal">cross-encoder rerank</span><span class="pill pill-teal">LangChain LCEL</span><span class="pill pill-teal">source citations</span>
+  </div>
+
+  <div class="projects-grid">
+
+    <div class="project-card" data-id="p8">
+      <div class="project-card-header">
+        <div class="check-box" onclick="toggleCheck(event, 'p8')"></div>
+        <div onclick="toggle('p8')" style="display:flex; align-items:center; gap:14px; flex:1; cursor:pointer;">
+          <span class="day-label">Day 15–16</span>
+          <div class="project-title-row">
+            <p class="project-name">Naive RAG + failure analysis</p>
+            <div class="project-tags"><span class="tag time-tag">⏱ 6–8 hrs</span><span class="tag">end-to-end</span><span class="tag">baseline metrics</span></div>
+          </div>
+          <span class="difficulty-dot diff-2"></span><span class="expand-icon">⌾</span>
+        </div>
+      </div>
+      <div class="project-body">
+        <div class="project-section"><p class="section-label">What you're building</p><p>Naive RAG from scratch, then 20-question stress test. Failure analysis drives all of Week 3.</p></div>
+        <div class="project-section"><p class="section-label">Build steps</p>
+          <ol class="step-list">
+            <li>Reuse Day 12 ChromaDB collection or ingest a PDF via <code>pypdf</code></li>
+            <li><code>rag_query(question)</code>: embed → top-5 → prompt → generate</li>
+            <li>Prompt: "Answer using ONLY the context. If absent, say so."</li>
+            <li>Test 20 questions you know the answers to. Rate each: ✓/⚠/✗/🚫</li>
+            <li>Analyse: retrieval failure or generation failure? Compute retrieval recall.</li>
+          </ol>
+        </div>
+        <div class="coach-note"><p class="section-label">Coach note</p><p>Day 16 failure analysis is THE most important step in Week 3. Know your baseline.</p></div>
+      </div>
+    </div>
+
+    <div class="project-card" data-id="p9">
+      <div class="project-card-header">
+        <div class="check-box" onclick="toggleCheck(event, 'p9')"></div>
+        <div onclick="toggle('p9')" style="display:flex; align-items:center; gap:14px; flex:1; cursor:pointer;">
+          <span class="day-label">Day 17–18</span>
+          <div class="project-title-row">
+            <p class="project-name">Chunking strategy lab — measured experiment</p>
+            <div class="project-tags"><span class="tag time-tag">⏱ 6–7 hrs</span><span class="tag">sentence split</span><span class="tag">semantic</span><span class="tag">precision@5</span></div>
+          </div>
+          <span class="difficulty-dot diff-2"></span><span class="expand-icon">⌾</span>
+        </div>
+      </div>
+      <div class="project-body">
+        <div class="project-section"><p class="section-label">What you're building</p><p>Re-ingest with 3 chunking strategies, measure precision@5 on your 20 test questions. Data-driven, not opinion.</p></div>
+        <div class="project-section"><p class="section-label">Build steps</p>
+          <ol class="step-list">
+            <li>Strategy A: fixed 500 chars / 50 overlap (baseline)</li>
+            <li>Strategy B: sentence split via <code>nltk.sent_tokenize()</code>, ~400 char groups</li>
+            <li>Strategy C: paragraph split on <code>\n\n</code></li>
+            <li>3 separate ChromaDB collections. Re-run 20 questions.</li>
+            <li>Plot precision@5 comparison. Pick winner.</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+
+    <div class="project-card" data-id="p10">
+      <div class="project-card-header">
+        <div class="check-box" onclick="toggleCheck(event, 'p10')"></div>
+        <div onclick="toggle('p10')" style="display:flex; align-items:center; gap:14px; flex:1; cursor:pointer;">
+          <span class="day-label">Day 19–20</span>
+          <div class="project-title-row">
+            <p class="project-name">Hybrid search + cross-encoder reranker</p>
+            <div class="project-tags"><span class="tag time-tag">⏱ 7–9 hrs</span><span class="tag">BM25</span><span class="tag">RRF</span><span class="tag">cross-encoder</span></div>
+          </div>
+          <span class="difficulty-dot diff-3"></span><span class="expand-icon">⌾</span>
+        </div>
+      </div>
+      <div class="project-body">
+        <div class="project-section"><p class="section-label">What you're building</p><p>BM25 sparse search + cross-encoder reranker. Production RAG standard.</p></div>
+        <div class="project-section"><p class="section-label">Build steps</p>
+          <ol class="step-list">
+            <li>Install <code>rank-bm25</code>. Build <code>BM25Okapi(tokenized_chunks)</code>.</li>
+            <li><code>hybrid_retrieve()</code>: dense top-20 + BM25 top-20 → fuse with RRF</li>
+            <li>Load <code>CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2')</code></li>
+            <li>Rerank 20 fused: score (question, chunk) pairs, return top-5</li>
+            <li>Re-run 20 questions. Compare to naive baseline.</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+
+    <div class="project-card" data-id="p11">
+      <div class="project-card-header">
+        <div class="check-box" onclick="toggleCheck(event, 'p11')"></div>
+        <div onclick="toggle('p11')" style="display:flex; align-items:center; gap:14px; flex:1; cursor:pointer;">
+          <span class="day-label">Day 21</span>
+          <div class="project-title-row">
+            <p class="project-name">RAG Q&amp;A CLI with citations — Week 3 capstone</p>
+            <div class="project-tags"><span class="tag time-tag">⏱ 5–6 hrs</span><span class="tag">LCEL</span><span class="tag">citations</span></div>
+          </div>
+          <span class="difficulty-dot diff-2"></span><span class="expand-icon">⌾</span>
+        </div>
+      </div>
+      <div class="project-body">
+        <div class="project-section"><p class="section-label">What you're building</p><p>Wrap your best RAG pipeline in LangChain LCEL with mandatory source citations.</p></div>
+        <div class="project-section"><p class="section-label">Build steps</p>
+          <ol class="step-list">
+            <li>Wrap hybrid+reranker as a <code>BaseRetriever</code> subclass</li>
+            <li>LCEL chain: <code>retriever | format_docs | prompt | llm | parser</code></li>
+            <li>Prompt requires <code>[Source: filename, chunk N]</code> citation per fact</li>
+            <li>Display citations clearly</li>
+            <li><code>--verbose</code> shows retrieved chunks + rerank scores</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="milestone" style="--accent-week: rgba(45,212,160,0.12);">
+    <p class="milestone-label">// Week 3 milestone</p>
+    <h3>Production RAG with measured quality</h3>
+    <p>Hybrid search, cross-encoder reranking, source citations, chunking experiment with precision@5.</p>
+  </div>
+</div>
+
+<!-- WEEK 4 -->
+<div class="week-panel" id="week-4">
+  <div class="week-head">
+    <span class="week-badge badge-w4">Week 4 · Days 22–30</span>
+    <div class="week-head-text">
+      <h2>Agents, evaluation &amp; production thinking</h2>
+      <p>Where junior engineers stop and senior engineers begin. Build an agent — and measure if it actually works.</p>
+    </div>
+  </div>
+
+  <div class="pitfall-box">
+    <p class="label">Common Week 4 pitfalls</p>
+    <ul>
+      <li>Building agents without max_iterations — they loop forever and burn money</li>
+      <li>Trusting RAGAS scores without checking a few by hand — LLM-as-judge has biases</li>
+      <li>Adding observability/tracing at the end — instrument from Day 22</li>
+      <li>Skipping cost tracking — you'll discover you spent ₹2,000 in a week the hard way</li>
+      <li>Ignoring prompt injection — any tool that touches external content is an attack surface</li>
+    </ul>
+  </div>
+
+  <div class="topics">
+    <span class="pill pill-amber">ReAct loop</span><span class="pill pill-amber">multi-step tools</span><span class="pill pill-amber">error recovery</span><span class="pill pill-amber">model routing</span><span class="pill pill-amber">RAGAS</span><span class="pill pill-amber">LLM-as-judge</span><span class="pill pill-amber">observability</span><span class="pill pill-amber">cost tracking</span>
+  </div>
+
+  <div class="projects-grid">
+
+    <div class="project-card" data-id="p12">
+      <div class="project-card-header">
+        <div class="check-box" onclick="toggleCheck(event, 'p12')"></div>
+        <div onclick="toggle('p12')" style="display:flex; align-items:center; gap:14px; flex:1; cursor:pointer;">
+          <span class="day-label">Day 22–23</span>
+          <div class="project-title-row">
+            <p class="project-name">ReAct research agent</p>
+            <div class="project-tags"><span class="tag time-tag">⏱ 8–10 hrs</span><span class="tag">ReAct</span><span class="tag">tool loop</span></div>
+          </div>
+          <span class="difficulty-dot diff-2"></span><span class="expand-icon">⌾</span>
+        </div>
+      </div>
+      <div class="project-body">
+        <div class="project-section"><p class="section-label">What you're building</p><p>An agent that answers multi-hop questions via Thought / Action / Observation loop. Tools: your Week 3 RAG, calculator, datetime.</p></div>
+        <div class="project-section"><p class="section-label">Build steps</p>
+          <ol class="step-list">
+            <li>System prompt: Thought / Action / Observation loop until Final Answer</li>
+            <li>Agentic loop: parse <code>Action:</code> → dispatch → append observation → loop</li>
+            <li><code>max_iterations=10</code> guard. On max, return "couldn't complete."</li>
+            <li>Test 5 questions needing 2+ tool calls</li>
+            <li>Log full Thought/Action/Observation trace per question</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+
+    <div class="project-card" data-id="p13">
+      <div class="project-card-header">
+        <div class="check-box" onclick="toggleCheck(event, 'p13')"></div>
+        <div onclick="toggle('p13')" style="display:flex; align-items:center; gap:14px; flex:1; cursor:pointer;">
+          <span class="day-label">Day 24–25</span>
+          <div class="project-title-row">
+            <p class="project-name">Robustness + model cost routing + observability</p>
+            <div class="project-tags"><span class="tag time-tag">⏱ 7–8 hrs</span><span class="tag">error recovery</span><span class="tag">cost routing</span><span class="tag">structured logging</span></div>
+          </div>
+          <span class="difficulty-dot diff-2"></span><span class="expand-icon">⌾</span>
+        </div>
+      </div>
+      <div class="project-body">
+        <div class="project-section"><p class="section-label">What you're building</p><p>Harden the agent. Add model router (Haiku for thought, Sonnet for action) to cut costs 60–80%. Add structured logging for every step.</p></div>
+        <div class="project-section"><p class="section-label">Build steps</p>
+          <ol class="step-list">
+            <li>Wrap every tool call in try/except, return structured error</li>
+            <li>Model router: Haiku for Thought (cheap), Sonnet for Action/Answer</li>
+            <li>Simulate 3 failures: timeout, empty result, unanswerable question</li>
+            <li>Structured logging: JSON line per step (timestamp, model, tokens, cost, latency)</li>
+            <li>Write <code>ROBUSTNESS.md</code> documenting every failure mode</li>
+          </ol>
+        </div>
+        <div class="coach-note"><p class="section-label">Coach note</p><p>Cost-routing pattern alone could be a job-interview talking point. ₹50/query agents don't ship.</p></div>
+      </div>
+    </div>
+
+    <div class="project-card" data-id="p14">
+      <div class="project-card-header">
+        <div class="check-box" onclick="toggleCheck(event, 'p14')"></div>
+        <div onclick="toggle('p14')" style="display:flex; align-items:center; gap:14px; flex:1; cursor:pointer;">
+          <span class="day-label">Day 26–27</span>
+          <div class="project-title-row">
+            <p class="project-name">LLM-as-judge evaluation harness</p>
+            <div class="project-tags"><span class="tag time-tag">⏱ 7–9 hrs</span><span class="tag">RAGAS</span><span class="tag">faithfulness</span><span class="tag">relevance</span></div>
+          </div>
+          <span class="difficulty-dot diff-3"></span><span class="expand-icon">⌾</span>
+        </div>
+      </div>
+      <div class="project-body">
+        <div class="project-section"><p class="section-label">What you're building</p><p>Implement faithfulness + answer relevance metrics manually with an LLM judge, then validate using RAGAS.</p></div>
+        <div class="project-section"><p class="section-label">Build steps</p>
+          <ol class="step-list">
+            <li>Build a 20-question test set with ground truths</li>
+            <li>Run RAG on all 20. Collect (question, contexts, answer, truth)</li>
+            <li>Faithfulness judge: "Answer only from contexts? YES/NO + reasoning." Score %.</li>
+            <li>Relevance judge: "Does answer address the question? 1–5." Average.</li>
+            <li>Run through <code>ragas.evaluate()</code>. Compare to your manual scores.</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+
+    <div class="project-card" data-id="p15">
+      <div class="project-card-header">
+        <div class="check-box" onclick="toggleCheck(event, 'p15')"></div>
+        <div onclick="toggle('p15')" style="display:flex; align-items:center; gap:14px; flex:1; cursor:pointer;">
+          <span class="day-label">Day 28–30</span>
+          <div class="project-title-row">
+            <p class="project-name">Month capstone — full evaluated agentic RAG + Streamlit UI</p>
+            <div class="project-tags"><span class="tag time-tag">⏱ 12–16 hrs</span><span class="tag">end-to-end</span><span class="tag">Streamlit</span><span class="tag">portfolio</span></div>
+          </div>
+          <span class="difficulty-dot diff-3"></span><span class="expand-icon">⌾</span>
+        </div>
+      </div>
+      <div class="project-body">
+        <div class="project-section"><p class="section-label">What you're building</p><p>Your centrepiece portfolio project. Agent + RAG + evals + cost tracking + a Streamlit web UI so anyone can try it in a browser without setup.</p></div>
+        <div class="project-section"><p class="section-label">System checklist</p>
+          <ol class="step-list">
+            <li>Agent layer: ReAct, max_iterations, model routing, error recovery</li>
+            <li>Knowledge layer: Week 3 RAG (hybrid + rerank + citations) as a tool</li>
+            <li>Eval suite: 20-question set, RAGAS, <code>make eval</code></li>
+            <li>Cost dashboard: per-query breakdown, cumulative tracker</li>
+            <li><strong>Streamlit UI:</strong> chat interface, sources panel, cost meter, deploy to Streamlit Cloud</li>
+            <li>README: architecture diagram, every design decision with trade-offs, eval results table</li>
+          </ol>
+        </div>
+        <div class="stretch-goal"><p class="section-label">Stretch goals (interview gold)</p><p>1) Expose the agent as a REST API with FastAPI (<code>POST /ask</code>). 2) Wrap your RAG pipeline as an MCP server.</p></div>
+        <div class="coach-note"><p class="section-label">Coach note</p><p>Streamlit Cloud + a public URL changes the game. A recruiter can click and use your project in 30 seconds.</p></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="reflect-box">
+    <p class="label">// End-of-month reflection</p>
+    <p>"What surprised me most? What can I now do that I couldn't 30 days ago?"</p>
+  </div>
+
+  <div class="milestone" style="--accent-week: rgba(245,166,35,0.12);">
+    <p class="milestone-label">// Month capstone</p>
+    <h3>Live, evaluated, cost-tracked agentic RAG with a public URL</h3>
+    <p>Anyone can click a link and use your AI system. Eval results documented. Architecture decisions explained.</p>
+  </div>
+</div>
+
+<!-- RESOURCES -->
+<div class="week-panel" id="week-5">
+  <div class="week-head">
+    <span class="week-badge badge-w5">Bonus</span>
+    <div class="week-head-text">
+      <h2>Resources, glossary &amp; what comes after Day 30</h2>
+      <p>Communities to join, terms decoded, interview prep, and the path forward.</p>
+    </div>
+  </div>
+
+  <h3 class="sec-h">If you fall behind</h3>
+
+  <div class="setup-step">
+    <div class="setup-step-head"><div class="setup-num">1</div><div class="setup-title">Missed 1–2 days? Compress the next 2 projects.</div></div>
+    <p>Drop the stretch goals. Skip the polishing. Get the core build done; mark complete; move forward.</p>
+  </div>
+  <div class="setup-step">
+    <div class="setup-step-head"><div class="setup-num">2</div><div class="setup-title">Missed 3–7 days? Skip a project, not a week.</div></div>
+    <p>Week 3: don't skip Day 15–16 or Day 19–20, those are essential.</p>
+  </div>
+  <div class="setup-step">
+    <div class="setup-step-head"><div class="setup-num">3</div><div class="setup-title">Missed an entire week?</div></div>
+    <p>Don't try to "catch up by doing two weeks in one." Extend the plan: the order matters more than the calendar.</p>
+  </div>
+
+  <h3 class="sec-h">Communities — where to ask when stuck</h3>
+  <div class="community-grid">
+    <a class="comm-card" href="https://discord.gg/anthropic" target="_blank">
+      <p class="comm-name">Anthropic Discord</p>
+      <p class="comm-desc">Active community discussing Claude API, prompt engineering, and AI engineering practice.</p>
+      <span class="comm-link">discord.gg/anthropic →</span>
+    </a>
+    <a class="comm-card" href="https://www.reddit.com/r/LocalLLaMA/" target="_blank">
+      <p class="comm-name">r/LocalLLaMA</p>
+      <p class="comm-desc">Most active LLM subreddit. Practical tips, model news, RAG/agent discussions.</p>
+      <span class="comm-link">reddit.com/r/LocalLLaMA →</span>
+    </a>
+    <a class="comm-card" href="https://discord.gg/langchain" target="_blank">
+      <p class="comm-name">LangChain Discord</p>
+      <p class="comm-desc">Official LangChain server. Office hours, plus debugging help for LCEL and agents.</p>
+      <span class="comm-link">discord.gg/langchain →</span>
+    </a>
+    <a class="comm-card" href="https://huggingface.co/spaces" target="_blank">
+      <p class="comm-name">HuggingFace Spaces</p>
+      <p class="comm-desc">See what others are building. Free hosting alternative to Streamlit Cloud for ML demos.</p>
+      <span class="comm-link">huggingface.co/spaces →</span>
+    </a>
+  </div>
+
+  <h3 class="sec-h">Glossary — terms decoded</h3>
+  <div class="glossary-grid">
+    <div class="gloss-card"><p class="gloss-term">Embedding</p><p class="gloss-def">A vector of numbers (usually 384–1536 dimensions) that captures the meaning of text. Similar text = similar vectors.</p></div>
+    <div class="gloss-card"><p class="gloss-term">Cosine similarity</p><p class="gloss-def">A measure between -1 and 1 of how similar two vectors are. 1 = identical direction.</p></div>
+    <div class="gloss-card"><p class="gloss-term">Token</p><p class="gloss-def">A chunk of text the model processes. Roughly 4 characters or ¾ of a word in English. Billing units.</p></div>
+    <div class="gloss-card"><p class="gloss-term">Context window</p><p class="gloss-def">Total tokens a model can process in one request. Claude Sonnet 4.6: 200K tokens.</p></div>
+    <div class="gloss-card"><p class="gloss-term">RAG</p><p class="gloss-def">Retrieval-Augmented Generation. Retrieve relevant docs from a knowledge base, pass to LLM for grounded answers.</p></div>
+    <div class="gloss-card"><p class="gloss-term">BM25</p><p class="gloss-def">Classic keyword-matching retrieval algorithm. Catches exact terms (product codes, names) that vector search misses.</p></div>
+    <div class="gloss-card"><p class="gloss-term">Cross-encoder</p><p class="gloss-def">A model that scores a (query, document) pair together. More accurate than embeddings for reranking, but slower.</p></div>
+    <div class="gloss-card"><p class="gloss-term">RRF</p><p class="gloss-def">Reciprocal Rank Fusion. Algorithm to combine ranked lists from multiple retrieval methods into one merged ranking.</p></div>
+    <div class="gloss-card"><p class="gloss-term">Precision@k</p><p class="gloss-def">Of the top-k retrieved results, what fraction are actually relevant? Standard retrieval quality metric.</p></div>
+    <div class="gloss-card"><p class="gloss-term">ReAct</p><p class="gloss-def">Agent pattern: Reason → Act → Observe, loop. The model thinks, calls a tool, sees the result, thinks again.</p></div>
+    <div class="gloss-card"><p class="gloss-term">Faithfulness</p><p class="gloss-def">RAG eval metric: does the generated answer use only information from the retrieved context? (No hallucinations.)</p></div>
+    <div class="gloss-card"><p class="gloss-term">Prompt caching</p><p class="gloss-def">Anthropic feature that caches long static prompts so repeated requests cost ~10% of normal.</p></div>
+    <div class="gloss-card"><p class="gloss-term">Prompt injection</p><p class="gloss-def">Malicious instructions hidden in content the model processes that hijack its behaviour. Treat all external text as untrusted.</p></div>
+    <div class="gloss-card"><p class="gloss-term">MCP</p><p class="gloss-def">Model Context Protocol. Open standard for connecting LLMs to tools and data sources. Worth learning after Day 30.</p></div>
+  </div>
+
+  <h3 class="sec-h">How to talk about your capstone in interviews</h3>
+
+  <div class="interview-card">
+    <p class="interview-q">Q: "Walk me through a project you built recently."</p>
+    <p class="interview-a"><strong>Frame it as a problem, not features.</strong> "I built an agent that answers questions over a knowledge base. The interesting part wasn't the agent itself, but making it reliable and cheap enough to actually deploy. I used a model router that sends reasoning steps to a smaller model and only escalates to a bigger one for final answers, which cut cost by about 70%."</p>
+  </div>
+
+  <div class="interview-card">
+    <p class="interview-q">Q: "Why hybrid search instead of just vector search?"</p>
+    <p class="interview-a"><strong>Show measurement, not opinion.</strong> "I measured both on a 20-question test set. Pure vector search hit precision@5 of around 0.55. Adding BM25 + RRF brought it to 0.71. Adding a cross-encoder reranker brought it to 0.83 — roughly a 50% improvement."</p>
+  </div>
+
+  <div class="interview-card">
+    <p class="interview-q">Q: "What would you do differently if you rebuilt this?"</p>
+    <p class="interview-a"><strong>This is the most important question.</strong> "I'd add observability earlier — I bolted on structured logging in Week 4 and it would have helped debug Weeks 2 and 3. Self-awareness signals senior thinking."</p>
+  </div>
+
+  <h3 class="sec-h">What to build after Day 30</h3>
+
+  <div class="setup-step">
+    <div class="setup-step-head"><div class="setup-num">1</div><div class="setup-title">Write a deep technical blog post about your capstone</div><span class="setup-time">~1 week</span></div>
+    <p>Pick one architectural decision and write 1500–2500 words with code snippets. This single post will get you more recruiter messages than 10 GitHub repos.</p>
+  </div>
+  <div class="setup-step">
+    <div class="setup-step-head"><div class="setup-num">2</div><div class="setup-title">Pick a vertical and build a domain-specific RAG</div><span class="setup-time">~2 weeks</span></div>
+    <p>Generic RAG is commodity. Domain knowledge × AI engineering is rare and valuable.</p>
+  </div>
+  <div class="setup-step">
+    <div class="setup-step-head"><div class="setup-num">3</div><div class="setup-title">Contribute to an open-source AI project</div><span class="setup-time">ongoing</span></div>
+    <p>LangChain, LlamaIndex, ChromaDB. Start with documentation fixes, then small bug fixes.</p>
+  </div>
+
+  <div class="coach-note" style="margin-top:24px;">
+    <p class="section-label">Final coach note</p>
+    <p>You won't be a "complete" AI engineer in 30 days — nobody is. But you'll be ahead of 80% of people who claim the title. Keep building, keep measuring, keep shipping.</p>
+  </div>
+</div>
+
+</div>
+
+<footer>
+  <p>30-Day AI Engineer Roadmap v3 · Progress saves in your browser</p>
+  <span style="font-size:12px; color:var(--dim);">16 projects · 1 capstone</span>
+</footer>
+
+<script>
+  const STORAGE_KEY = 'ai_engineer_30day_progress';
+  let completed = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  const allProjects = ['p0','p1','p2','p3','p4','p5','p6','p7','p8','p9','p10','p11','p12','p13','p14','p15'];
+
+  function updateProgress() {
+    const done = completed.length;
+    const total = allProjects.length;
+    const pct = Math.round((done / total) * 100);
+    document.getElementById('progStat').textContent = done + ' / ' + total;
+    document.getElementById('progFill').style.width = pct + '%';
+    let stage = 'Day 0 mindset';
+    if (done >= 1 && done <= 4) stage = 'Week 1 momentum';
+    else if (done >= 5 && done <= 7) stage = 'Week 2 in flight';
+    else if (done >= 8 && done <= 11) stage = 'Week 3 deep work';
+    else if (done >= 12 && done <= 15) stage = 'Week 4 production thinking';
+    else if (done === 16) stage = 'Capstone complete — you shipped';
+    document.getElementById('progPct').textContent = pct + '% complete · ' + stage;
+  }
+
+  function applyCheckedState() {
+    document.querySelectorAll('.project-card').forEach(card => {
+      const id = card.dataset.id;
+      const box = card.querySelector('.check-box');
+      if (completed.includes(id)) {
+        card.classList.add('done');
+        box.classList.add('checked');
+      } else {
+        card.classList.remove('done');
+        box.classList.remove('checked');
+      }
+    });
+  }
+
+  function toggleCheck(e, id) {
+    e.stopPropagation();
+    if (completed.includes(id)) {
+      completed = completed.filter(x => x !== id);
+    } else {
+      completed.push(id);
+    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(completed));
+    applyCheckedState();
+    updateProgress();
+  }
+
+  function resetProgress() {
+    if (confirm('Reset all progress? This cannot be undone.')) {
+      completed = [];
+      localStorage.setItem(STORAGE_KEY, '[]');
+      applyCheckedState();
+      updateProgress();
+    }
+  }
+
+  function showWeek(n, btn) {
+    document.querySelectorAll('.week-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+    document.getElementById('week-' + n).classList.add('active');
+    btn.classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function toggle(id) {
+    document.querySelector('[data-id="' + id + '"]').classList.toggle('open');
+  }
+
+  function toggleTheme() {
+    const body = document.body;
+    const btn = document.getElementById('themeBtn');
+    if (body.classList.contains('dark')) {
+      body.classList.remove('dark'); body.classList.add('light');
+      btn.textContent = '☀ DARK';
+      localStorage.setItem('theme', 'light');
+    } else {
+      body.classList.remove('light'); body.classList.add('dark');
+      btn.textContent = '☀ LIGHT';
+      localStorage.setItem('theme', 'dark');
+    }
+  }
+
+  (function init() {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+      document.body.classList.remove('light');
+      document.body.classList.add('dark');
+      document.getElementById('themeBtn').textContent = '☀ LIGHT';
+    }
+    applyCheckedState();
+    updateProgress();
+  })();
+</script>
+</body>
+</html>

@@ -1,0 +1,111 @@
+<svg width="980" height="460" viewBox="0 0 980 460" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arrow3" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M2 1L8 5L2 9" fill="none" stroke="#5C6372" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+  </defs>
+  <rect width="980" height="460" fill="#0B0D12"/>
+  <text x="490" y="38" text-anchor="middle" font-family="Manrope, sans-serif" font-size="20" font-weight="700" fill="#E8EAED">System architecture: a modular monolith</text>
+  <text x="490" y="60" text-anchor="middle" font-family="Manrope, sans-serif" font-size="12.5" fill="#7C8493">One backend process, ten internal modules, two external AI services</text>
+
+  <!-- Pipeline row -->
+  <g font-family="Manrope, sans-serif">
+    <!-- M1 Ingest -->
+    <rect x="30" y="100" width="150" height="78" rx="9" fill="#14161C" stroke="#23262F"/>
+    <text x="46" y="122" font-family="JetBrains Mono, monospace" font-size="9.5" fill="#7C8493">M1</text>
+    <text x="46" y="142" font-size="13" font-weight="700" fill="#E8EAED">Ingest</text>
+    <text x="46" y="160" font-size="10.5" fill="#7C8493">Upload + validate</text>
+
+    <path d="M180 139 L 208 139" stroke="#5C6372" stroke-width="1.5" marker-end="url(#arrow3)"/>
+
+    <!-- M2 Transcription -->
+    <rect x="210" y="100" width="150" height="78" rx="9" fill="#14161C" stroke="#23262F"/>
+    <text x="226" y="122" font-family="JetBrains Mono, monospace" font-size="9.5" fill="#7C8493">M2</text>
+    <text x="226" y="142" font-size="13" font-weight="700" fill="#E8EAED">Transcribe</text>
+    <text x="226" y="160" font-size="10.5" fill="#7C8493">Whisper API</text>
+
+    <path d="M360 139 L 388 139" stroke="#5C6372" stroke-width="1.5" marker-end="url(#arrow3)"/>
+
+    <!-- M3 Twin -->
+    <rect x="390" y="100" width="150" height="78" rx="9" fill="#161A22" stroke="rgba(196,181,253,0.3)"/>
+    <text x="406" y="122" font-family="JetBrains Mono, monospace" font-size="9.5" fill="#C4B5FD">M3</text>
+    <text x="406" y="142" font-size="13" font-weight="700" fill="#E8EAED">Twin Generator</text>
+    <text x="406" y="160" font-size="10.5" fill="#9CA3AF">Claude analysis</text>
+
+    <path d="M540 139 L 568 139" stroke="#5C6372" stroke-width="1.5" marker-end="url(#arrow3)"/>
+
+    <!-- M4 Store -->
+    <rect x="570" y="100" width="150" height="78" rx="9" fill="#161A1A" stroke="rgba(94,234,212,0.25)"/>
+    <text x="586" y="122" font-family="JetBrains Mono, monospace" font-size="9.5" fill="#5EEAD4">M4</text>
+    <text x="586" y="142" font-size="13" font-weight="700" fill="#E8EAED">Twin Store</text>
+    <text x="586" y="160" font-size="10.5" fill="#9CA3AF">SQLite, all aggregates</text>
+
+    <!-- down to M5/M6 -->
+    <path d="M645 178 L 645 206" stroke="#5C6372" stroke-width="1.5" marker-end="url(#arrow3)"/>
+
+    <!-- M5 Search -->
+    <rect x="540" y="208" width="150" height="70" rx="9" fill="#14161C" stroke="#23262F"/>
+    <text x="556" y="228" font-family="JetBrains Mono, monospace" font-size="9.5" fill="#7C8493">M5</text>
+    <text x="556" y="248" font-size="13" font-weight="700" fill="#E8EAED">Search</text>
+    <text x="556" y="266" font-size="10.5" fill="#7C8493">Query the twin</text>
+
+    <path d="M645 278 L 645 306" stroke="#84CCFF" stroke-width="1.5" marker-end="url(#arrow3)"/>
+
+    <!-- M6 Agent -->
+    <rect x="540" y="308" width="150" height="86" rx="9" fill="#16181F" stroke="rgba(132,204,255,0.4)" stroke-width="1.5"/>
+    <text x="556" y="330" font-family="JetBrains Mono, monospace" font-size="9.5" fill="#84CCFF">M6</text>
+    <text x="556" y="350" font-size="13" font-weight="700" fill="#E8EAED">Editor Agent</text>
+    <text x="556" y="368" font-size="10.5" fill="#9CA3AF">Bounded loop</text>
+    <text x="556" y="384" font-size="10.5" fill="#9CA3AF">the differentiator</text>
+
+    <path d="M690 351 L 718 351" stroke="#5C6372" stroke-width="1.5" marker-end="url(#arrow3)"/>
+
+    <!-- M7 Assembler -->
+    <rect x="720" y="313" width="150" height="76" rx="9" fill="#14161C" stroke="#23262F"/>
+    <text x="736" y="335" font-family="JetBrains Mono, monospace" font-size="9.5" fill="#7C8493">M7</text>
+    <text x="736" y="355" font-size="13" font-weight="700" fill="#E8EAED">Assembler</text>
+    <text x="736" y="373" font-size="10.5" fill="#7C8493">FFmpeg → MP4</text>
+
+    <!-- M9 UI -->
+    <rect x="390" y="208" width="120" height="186" rx="9" fill="#14161C" stroke="#23262F"/>
+    <text x="406" y="230" font-family="JetBrains Mono, monospace" font-size="9.5" fill="#7C8493">M9</text>
+    <text x="406" y="250" font-size="13" font-weight="700" fill="#E8EAED">Web UI</text>
+    <text x="406" y="270" font-size="10.5" fill="#7C8493">Upload screen</text>
+    <text x="406" y="288" font-size="10.5" fill="#7C8493">Twin viewer</text>
+    <text x="406" y="306" font-size="10.5" fill="#7C8493">Search bar</text>
+    <text x="406" y="324" font-size="10.5" fill="#7C8493">Agent runner</text>
+    <text x="406" y="342" font-size="10.5" fill="#C4B5FD">Reasoning trace</text>
+    <text x="406" y="360" font-size="10.5" fill="#7C8493">timeline (live)</text>
+
+    <!-- M10 Gateway -->
+    <rect x="210" y="208" width="150" height="186" rx="9" fill="#14161C" stroke="#23262F"/>
+    <text x="226" y="230" font-family="JetBrains Mono, monospace" font-size="9.5" fill="#7C8493">M10</text>
+    <text x="226" y="250" font-size="13" font-weight="700" fill="#E8EAED">API Gateway</text>
+    <text x="226" y="270" font-size="10.5" fill="#7C8493">Single HTTP</text>
+    <text x="226" y="288" font-size="10.5" fill="#7C8493">entry point</text>
+    <text x="226" y="316" font-size="10.5" fill="#7C8493">+ SSE relay for</text>
+    <text x="226" y="334" font-size="10.5" fill="#7C8493">live agent stream</text>
+
+    <path d="M390 280 L 362 280" stroke="#5C6372" stroke-width="1.5" marker-end="url(#arrow3)"/>
+
+    <!-- M8 Output -->
+    <rect x="720" y="100" width="150" height="78" rx="9" fill="#14161C" stroke="#23262F"/>
+    <text x="736" y="122" font-family="JetBrains Mono, monospace" font-size="9.5" fill="#7C8493">M8</text>
+    <text x="736" y="142" font-size="13" font-weight="700" fill="#E8EAED">Output Store</text>
+    <text x="736" y="160" font-size="10.5" fill="#7C8493">Files in/out</text>
+    <path d="M795 313 L 795 178" stroke="#5C6372" stroke-width="1.5" marker-end="url(#arrow3)"/>
+
+  </g>
+
+  <!-- legend -->
+  <rect x="30" y="412" width="14" height="14" rx="3" fill="#16181F" stroke="rgba(132,204,255,0.4)"/>
+  <text x="52" y="423" font-family="Manrope, sans-serif" font-size="11" fill="#9CA3AF">Agentic / differentiator</text>
+  <rect x="240" y="412" width="14" height="14" rx="3" fill="#161A1A" stroke="rgba(94,234,212,0.25)"/>
+  <text x="262" y="423" font-family="Manrope, sans-serif" font-size="11" fill="#9CA3AF">Persistence layer</text>
+  <rect x="420" y="412" width="14" height="14" rx="3" fill="#161A22" stroke="rgba(196,181,253,0.3)"/>
+  <text x="442" y="423" font-family="Manrope, sans-serif" font-size="11" fill="#9CA3AF">External AI call</text>
+  <rect x="600" y="412" width="14" height="14" rx="3" fill="#14161C" stroke="#23262F"/>
+  <text x="622" y="423" font-family="Manrope, sans-serif" font-size="11" fill="#9CA3AF">Plumbing / infra</text>
+
+  <text x="490" y="450" text-anchor="middle" font-family="Manrope, sans-serif" font-size="12" font-style="italic" fill="#5C6372">Logical module boundaries inside one deployable backend - no network hops between them.</text>
+</svg>

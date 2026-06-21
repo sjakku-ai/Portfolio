@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Advanced AI Architectures: RAG, Recommendations, and Real-Time Systems — Sireesha Jakku</title>
+<link rel="stylesheet" href="/blog/post.css">
+<script>try{if(localStorage.getItem('theme')!=='dark')document.addEventListener('DOMContentLoaded',function(){document.body.classList.add('light')})}catch(e){}</script>
+</head>
+<body class="light">
+<div class="page">
+
+<header class="post-header">
+  <a href="/" class="home-link">← home</a>
+  <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">☀ DARK</button>
+</header>
+
+<article>
+  <p class="post-date">Jan 31, 2026</p>
+  <h1>AI System Design: Part-4 - Advanced AI Architectures: RAG, Recommendations, and Real-Time Systems</h1>
+  <p class="post-summary">The patterns behind three of the most common — and most misimplemented — AI systems in production.</p>
+  <hr>
+
+  <p><em>The patterns behind three of the most common — and most misimplemented — AI systems in production.</em></p>
+  <hr>
+
+  <p>There's the version of AI system design that lives on whiteboards: clean diagrams, one-directional arrows, components doing one thing. Then there's the version that runs in production — hybrid architectures, failure modes that surface only under real traffic, decisions that look wrong in isolation but right in context. This post covers three key patterns: big-data processing (Lambda/Kappa), real-time recommendations, and Retrieval-Augmented Generation (RAG).</p>
+  <hr>
+
+  <h2>Part 1: Lambda vs. Kappa</h2>
+  <p>At tens of millions of users you need two things at once: fresh insight into what's happening now, and accurate answers over all history. Batch processing is accurate but lags by hours; streaming is current but typically on a bounded recent window. Lambda Architecture (Nathan Marz, 2011) was the answer to having both.</p>
+  <p><strong>Lambda</strong> runs two pipelines over the same data: a batch layer recomputing accurate views nightly, and a speed layer producing approximate current views. The serving layer merges them. Netflix used it for years — Hadoop nightly, Kafka+Flink for recent signals. <strong>The fatal flaw:</strong> the same business logic runs twice, in two systems, maintained by two teams. They drift. One 2024 post-mortem described batch and speed layers that diverged so badly over three years they gave different answers to the same query — and nobody noticed.</p>
+  <p><strong>Kappa</strong> (Jay Kreps) simplifies: treat <em>everything</em> as a stream, including history, by replaying the event log at high parallelism. One codebase, one engine. Kafka's retention makes it viable — replay 90 days through Flink at 100× speed to rebuild views. <strong>Where it struggles:</strong> massive historical backfills (90-day retention isn't three years) and deep analytical queries that are awkward in streaming semantics.</p>
+  <p><strong>The 2026 consensus — Kappa + Lakehouse:</strong> Kafka as the streaming backbone for real-time work, plus a Lakehouse (Delta, Iceberg) as the durable analytical store with ACID and time-travel. Pipelines periodically materialize streaming results into the Lakehouse. Not a clean principle — the pragmatic answer from teams needing both real-time and historically accurate systems that stay maintainable.</p>
+
+  <div class="diagram">
+    <script type="text/mermaid">
+flowchart TD
+    subgraph LambdaArch[Lambda Architecture]
+        LS[Event Stream] --> LBatch[Batch Layer nightly accurate]
+        LS --> LSpeed[Speed Layer streaming approximate]
+        LBatch --> LServe[Serving Layer merge views]
+        LSpeed --> LServe
+    end
+    </script>
+    <div class="diagram-svg"></div>
+  </div>
+
+  <div class="diagram">
+    <script type="text/mermaid">
+flowchart TD
+    subgraph KappaArch[Kappa Architecture]
+        KS[Event Stream] --> KProc[Stream Processor one codebase]
+        KProc --> KServe[Serving Layer]
+    end
+    </script>
+    <div class="diagram-svg"></div>
+  </div>
+  <hr>
+
+  <h2>Part 2: Real-Time Recommendations</h2>
+  <p>Conceptually simple — given a user, return ranked items. At scale (Netflix: 17,000 titles to 200M users) it requires careful staging. The naive approach of scoring every item for every user fails: at 100ms/item over 1M items, that's 28 hours per request. The production answer is a funnel that narrows candidates while increasing ranking sophistication.</p>
+
+  <p><strong>Stage 1 — Retrieval.</strong> Narrows millions to hundreds via ANN search over embeddings. Users and items are encoded into dense vectors; similar ones sit close in the space. At serving, the user embedding queries a vector DB (HNSW/IVF) for the K nearest items in 5–20ms regardless of catalog size — ANN doesn't scan everything. FAISS builds the indexes; Pinecone/Qdrant host them. The embedding model matters enormously: items filtered out here can't be recovered by any downstream ranking.</p>
+  <p><strong>Stage 2 — Ranking.</strong> Re-scores the hundreds with features too expensive to compute for millions: user features, item features, and <strong>cross features</strong> (does this user engage with this content type? seen it before?). Cross features make ranking powerful — and are exactly what retrieval can't afford. Runs on GPU; 100 candidates complete in under 20ms.</p>
+  <p><strong>Stage 3 — Business logic.</strong> Filters scores through diversity constraints, freshness boosts, inventory checks, regulatory filters, and margin rules. Deliberately <em>not</em> a model — explicit, auditable code. When a PM says "too many items from one category," the fix is a diversity filter here, not a retrain.</p>
+
+  <div class="diagram">
+    <script type="text/mermaid">
+flowchart TD
+    subgraph top [" "]
+        direction LR
+        User([User]) -->|query| Retrieval["Retrieval<br/>ANN Search · Millions → Hundreds"]
+        Retrieval -->|top-K candidates| Ranking["Ranking<br/>GPU Cross-Features · Hundreds → Tens"]
+    end
+    subgraph bottom [" "]
+        direction RL
+        BizLogic["Business Logic<br/>Diversity · Freshness · Rules"] -->|ranked list| Results([Ranked Results])
+    end
+    Ranking -->|scored items| BizLogic
+    </script>
+    <div class="diagram-svg"></div>
+  </div>
+
+  <p><strong>Feature boundaries.</strong> Batch features (30-day genre preferences) are precomputed and cached for sub-10ms lookup. Real-time features (clicks in the last 5 minutes, current query) need stream processing (Flink over Kafka) and sub-ms Redis. The nightmare: a batch feature used in a real-time context serving stale values, or a real-time computation blowing the P99 budget. Enforcing this boundary architecturally is one of the most important design decisions.</p>
+  <p><strong>A/B testing</strong> here has <strong>interference effects</strong>: recommending an item to treatment users changes its popularity, affecting control users. This breaks the independence A/B testing assumes. Solutions — user-level, item-level, or time-based splitting — each carry different biases you must understand to interpret results.</p>
+  <hr>
+
+  <h2>Part 3: Retrieval-Augmented Generation (RAG)</h2>
+  <p>RAG is heavily discussed and commonly implemented wrong, because most descriptions stop at "retrieve documents, add to prompt" and skip the engineering that determines whether it works.</p>
+  <p><strong>Why it exists:</strong> LLMs have a training cutoff and no access to your proprietary data. Retraining is expensive; fine-tuning helps style, not facts. RAG gives the model a lookup capability instead — retrieve relevant documents at query time, inject them into context, and let the model reason over fresh, grounded evidence rather than memorized facts.</p>
+  <p><strong>Chunking</strong> isn't a minor detail. Too small (under 100 tokens) and chunks lose context; too large (over 1,000) and you dilute signal. Best practice for most text: <strong>256–512 tokens with 50-token overlap</strong> so concepts spanning a boundary survive.</p>
+  <p><strong>Embedding</strong> quality determines retrieval quality — and high MTEB scores don't guarantee performance on <em>your</em> domain. Evaluate candidates on your actual queries (recall@10, MRR) before committing. Leading models mid-2026: OpenAI <code>text-embedding-3-large</code>, Cohere Embed v3, Voyage <code>voyage-3-large</code>, open-source <code>bge-m3</code> and <code>e5-mistral-7b</code>.</p>
+  <p><strong>Hybrid retrieval (the critical, usually-skipped step).</strong> Pure vector search is good at semantics but poor at exact match — error codes, SKUs, version strings, unusual names break it. Run <strong>BM25</strong> (keyword) and vector search in parallel, then fuse with <strong>Reciprocal Rank Fusion</strong>: score = 1 / (rank + 60), summed across lists. Documents ranking high in both get a boost; the constant 60 is empirically robust.</p>
+  <p><strong>Reranking.</strong> Pass the top 20–50 to a cross-encoder, which processes query and document <em>jointly</em> (unlike independent embeddings), capturing relevance nuance. Slower (10–100ms for 20) so applied only to a shortlist. Top rerankers 2026: Cohere Rerank 3.5, Voyage rerank-2.5, open-source <code>bge-reranker-v2-m3</code>. Sweet spot: 15–30 candidates.</p>
+  <p><strong>Generation.</strong> Instruct the model to answer <em>only</em> from context and say "I don't know" otherwise — without this, LLMs hallucinate plausibly. Ask for source citations to make outputs auditable. Mind "lost in the middle": models attend to the start and end of long context, so place the most relevant chunks there, not buried.</p>
+
+  <div class="diagram">
+    <script type="text/mermaid">
+flowchart LR
+    Query([Query]) -->|embed| Embed["Embed Query"]
+    Embed -->|vector| VecSearch["Vector Search<br/>Top 20"]
+    Embed -->|keyword| BM25["BM25 Search<br/>Top 20"]
+    VecSearch -->|semantic hits| Fuse["RRF Fusion"]
+    BM25 -->|top-20| Fuse
+    Fuse -->|fused top-20| Rerank["Cross-Encoder Reranker<br/>Top 5"]
+    Rerank -->|top-5| LLM["LLM<br/>Generate Answer"]
+    LLM -->|grounded| Answer([Answer + Citations])
+    </script>
+    <div class="diagram-svg"></div>
+  </div>
+
+  <p><strong>Evaluation — the part most teams skip.</strong> A RAG system is only as good as its retrieval. Measure before obsessing over which LLM: <strong>Recall@K</strong> (if recall@5 is 0.60, 40% of queries get no answer in context and the LLM hallucinates), <strong>MRR</strong> (is the best chunk ranked early?), and <strong>faithfulness</strong> (does the answer stay within retrieved context? — RAGAS and DeepEval measure it). Build 50–100 question-answer pairs with known sources from the start and rerun after every change to chunking, embedding, K, or reranker.</p>
+  <hr>
+
+  <h2>Connecting the Patterns</h2>
+  <p>All three work in demos and break in production. Lambda breaks because two codebases for one logic always diverge. Recommendations break because embedding quality is undertested and batch/real-time feature boundaries blur. RAG breaks because pure vector search misses exact matches and nobody measured retrieval recall. The pattern matters less than the discipline: measure what matters, instrument every stage, and never assume the system works just because it returns answers.</p>
+
+  <div class="series-nav">
+    <p>← <a href="/blog/deployment-and-monitoring.html">Part 3 — Deploying and Keeping AI Models Alive in Production</a></p>
+    <p>Next: <a href="/blog/economics-and-responsible-ai.html">Part 5 — The Economics and Ethics of Production AI →</a></p>
+  </div>
+
+  <div class="sources">
+    <p class="sources-title">Sources</p>
+    <ul>
+      <li><a href="https://appscale.blog/en/blog/hybrid-search-and-reranking-production-rag-bm25-dense-cross-encoder-2026" target="_blank" rel="noopener">Hybrid Search and Re-ranking in Production RAG 2026</a></li>
+      <li><a href="https://www.digitalapplied.com/blog/hybrid-search-bm25-vector-reranking-reference-2026" target="_blank" rel="noopener">Hybrid Search: BM25, Vector &amp; Reranking 2026</a></li>
+      <li><a href="https://thelinuxcode.com/lambda-vs-kappa-architecture-in-system-design-2026-how-i-choose-for-real-time-historical-data/" target="_blank" rel="noopener">Lambda vs. Kappa Architecture in System Design (2026)</a></li>
+      <li><a href="https://www.flexera.com/blog/finops/kappa-architecture/" target="_blank" rel="noopener">Kappa Architecture 101: Deep dive into stream-first design (2026)</a></li>
+      <li><a href="https://redis.io/blog/rag-at-scale/" target="_blank" rel="noopener">RAG at Scale: How to Build Production AI Systems in 2026</a></li>
+      <li><a href="https://azumo.com/artificial-intelligence/ai-insights/top-vector-database-solutions" target="_blank" rel="noopener">Top Vector Database Solutions for RAG Applications: 2026</a></li>
+    </ul>
+  </div>
+</article>
+
+<nav class="post-nav">
+  <a href="/blog/deployment-and-monitoring.html">
+    <span class="nav-label">Previous</span>
+    ← Deploying and Keeping AI Models Alive
+  </a>
+  <a href="/blog/economics-and-responsible-ai.html" class="nav-next">
+    <span class="nav-label">Next</span>
+    The Economics and Ethics of Production AI →
+  </a>
+</nav>
+
+</div>
+<script type="module" src="/blog/post.js"></script>
+</body>
+</html>

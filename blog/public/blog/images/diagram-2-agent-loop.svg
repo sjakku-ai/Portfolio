@@ -1,0 +1,72 @@
+<svg width="900" height="560" viewBox="0 0 900 560" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arrow2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M2 1L8 5L2 9" fill="none" stroke="#5C6372" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <marker id="arrowAccent" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M2 1L8 5L2 9" fill="none" stroke="#84CCFF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+  </defs>
+
+  <rect width="900" height="560" fill="#0B0D12"/>
+  <text x="450" y="40" text-anchor="middle" font-family="Manrope, sans-serif" font-size="20" font-weight="700" fill="#E8EAED">The bounded editor agent loop</text>
+  <text x="450" y="64" text-anchor="middle" font-family="Manrope, sans-serif" font-size="12.5" fill="#7C8493">Plan → Draft → Critique → Revise, capped at 2 iterations</text>
+
+  <!-- BRIEF -->
+  <rect x="370" y="90" width="160" height="50" rx="8" fill="#14161C" stroke="#23262F"/>
+  <text x="450" y="110" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" letter-spacing="1" fill="#7C8493">INPUT</text>
+  <text x="450" y="128" text-anchor="middle" font-family="Manrope, sans-serif" font-size="12" font-weight="600" fill="#E8EAED">Creative Brief</text>
+
+  <path d="M450 140 L 450 168" stroke="#5C6372" stroke-width="1.5" marker-end="url(#arrow2)"/>
+
+  <!-- PLAN -->
+  <rect x="350" y="170" width="200" height="56" rx="8" fill="#161A22" stroke="rgba(132,204,255,0.25)"/>
+  <text x="368" y="192" font-family="JetBrains Mono, monospace" font-size="9.5" letter-spacing="1" fill="#84CCFF">PLAN</text>
+  <text x="368" y="210" font-family="Manrope, sans-serif" font-size="11" fill="#C9CED6">Editorial strategist sets the arc</text>
+
+  <path d="M450 226 L 450 254" stroke="#5C6372" stroke-width="1.5" marker-end="url(#arrow2)"/>
+
+  <!-- DRAFT -->
+  <rect x="350" y="256" width="200" height="56" rx="8" fill="#161A22" stroke="#23262F"/>
+  <text x="368" y="278" font-family="JetBrains Mono, monospace" font-size="9.5" letter-spacing="1" fill="#94A3B8">DRAFT</text>
+  <text x="368" y="296" font-family="Manrope, sans-serif" font-size="11" fill="#C9CED6">Junior editor picks clips → EDL</text>
+
+  <path d="M450 312 L 450 340" stroke="#5C6372" stroke-width="1.5" marker-end="url(#arrow2)"/>
+
+  <!-- CRITIQUE -->
+  <rect x="350" y="342" width="200" height="64" rx="8" fill="#1F1620" stroke="rgba(248,113,113,0.3)"/>
+  <text x="368" y="364" font-family="JetBrains Mono, monospace" font-size="9.5" letter-spacing="1" fill="#FCA5A5">CRITIQUE</text>
+  <text x="368" y="382" font-family="Manrope, sans-serif" font-size="11" fill="#C9CED6">Senior editor self-evaluates,</text>
+  <text x="368" y="397" font-family="Manrope, sans-serif" font-size="11" fill="#C9CED6">scores 1-10, lists weaknesses</text>
+
+  <!-- branch: pass -->
+  <path d="M550 374 L 660 374 L 660 470" stroke="#5EEAD4" stroke-width="1.5" marker-end="url(#arrow2)"/>
+  <rect x="600" y="350" width="84" height="26" rx="13" fill="#0F2420" stroke="rgba(94,234,212,0.3)"/>
+  <text x="642" y="367" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9.5" fill="#5EEAD4">PASS</text>
+
+  <!-- branch: fail/revise -->
+  <path d="M350 374 L 240 374 L 240 240 L 348 240" stroke="#FCA5A5" stroke-width="1.5" marker-end="url(#arrowAccent)" fill="none"/>
+  <rect x="156" y="350" width="84" height="26" rx="13" fill="#241616" stroke="rgba(248,113,113,0.3)"/>
+  <text x="198" y="367" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9.5" fill="#FCA5A5">FAIL</text>
+
+  <!-- REVISE -->
+  <rect x="120" y="212" width="200" height="56" rx="8" fill="#161A22" stroke="#23262F"/>
+  <text x="138" y="234" font-family="JetBrains Mono, monospace" font-size="9.5" letter-spacing="1" fill="#94A3B8">REVISE</text>
+  <text x="138" y="252" font-family="Manrope, sans-serif" font-size="11" fill="#C9CED6">Fixes the critiqued weaknesses</text>
+  <path d="M220 240 L 348 240" stroke="#5C6372" stroke-width="1.5" marker-end="url(#arrow2)" fill="none"/>
+
+  <text x="220" y="200" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#5C6372">loops back to CRITIQUE</text>
+
+  <!-- FINAL -->
+  <rect x="560" y="458" width="200" height="56" rx="8" fill="#0F2420" stroke="rgba(94,234,212,0.35)"/>
+  <text x="578" y="480" font-family="JetBrains Mono, monospace" font-size="9.5" letter-spacing="1" fill="#5EEAD4">FINAL EDL</text>
+  <text x="578" y="498" font-family="Manrope, sans-serif" font-size="11" fill="#C9CED6">Passed to FFmpeg assembly</text>
+
+  <!-- Guardrails note -->
+  <rect x="40" y="458" width="460" height="80" rx="8" fill="#14161C" stroke="#23262F"/>
+  <text x="56" y="480" font-family="JetBrains Mono, monospace" font-size="10" letter-spacing="1" fill="#7C8493">GUARDRAILS</text>
+  <text x="56" y="500" font-family="Manrope, sans-serif" font-size="11" fill="#9CA3AF">Iteration cap (max 2) · Token budget (30k) · Schema</text>
+  <text x="56" y="518" font-family="Manrope, sans-serif" font-size="11" fill="#9CA3AF">validation · EDL sanity check · Convergence detection</text>
+
+  <text x="450" y="548" text-anchor="middle" font-family="Manrope, sans-serif" font-size="12" font-style="italic" fill="#5C6372">Cost per run: ~$0.10-0.22. Always returns the best draft seen, even on early exit.</text>
+</svg>

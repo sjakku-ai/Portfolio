@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Building FootageTwin: An AI Agent That Edits Video Like a Junior Editor Under Review — Sireesha Jakku</title>
+<meta name="description" content="How we taught an LLM to plan, draft, critique, and revise a video rough cut — and why the critique step is the whole point.">
+<link rel="stylesheet" href="/blog/post.css">
+<script>try{if(localStorage.getItem('theme')!=='dark')document.addEventListener('DOMContentLoaded',function(){document.body.classList.add('light')})}catch(e){}</script>
+<style>
+  figure { margin: 24px 0; }
+  figure img { width: 100%; height: auto; display: block; border-radius: 10px; border: 1px solid var(--border); }
+  figcaption { font-family: 'Geist Mono', monospace; font-size: 11px; color: var(--dim); text-align: center; margin-top: 10px; letter-spacing: 0.06em; }
+  .callout {
+    background: var(--surface); border: 1px solid var(--border);
+    border-left: 2px solid var(--accent);
+    border-radius: 8px; padding: 16px 20px; margin: 24px 0;
+    font-size: 14px; line-height: 1.6; color: var(--muted);
+  }
+  .table-wrap { overflow-x: auto; margin: 24px 0; -webkit-overflow-scrolling: touch; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  thead th { text-align: left; font-family: 'Geist Mono', monospace; font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); background: var(--surface2); padding: 12px 16px; border-bottom: 1px solid var(--border); }
+  tbody td { padding: 12px 16px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: top; line-height: 1.55; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody td:first-child { font-family: 'Geist Mono', monospace; font-weight: 500; color: var(--accent); white-space: nowrap; font-size: 12.5px; }
+  .eyebrow { font-family: 'Geist Mono', monospace; font-size: 11px; letter-spacing: 0.12em; color: var(--accent); text-transform: uppercase; margin-bottom: 10px; }
+</style>
+</head>
+<body class="light">
+<div class="page">
+
+<header class="post-header">
+  <a href="/" class="home-link">← home</a>
+  <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">☀ DARK</button>
+</header>
+
+<article>
+  <p class="eyebrow">Engineering &middot; AI Agents</p>
+  <p class="post-date">May 20, 2026</p>
+  <h1>Building FootageTwin: An AI Agent That Edits Video Like a Junior Editor Under Review</h1>
+  <p class="post-summary">How we spent 48 hours teaching an LLM to plan, draft, critique, and revise a rough cut &mdash; and why the &ldquo;critique&rdquo; step is the whole point.</p>
+  <hr>
+
+  <h2>The problem nobody automates</h2>
+
+  <p>Ask any video editor at a mid-sized content studio what eats their week, and the answer is rarely &ldquo;editing.&rdquo; It&rsquo;s <strong>watching</strong>.</p>
+
+  <p>A 40-minute interview produces maybe 90 seconds of usable highlight reel. Getting there means scrubbing through the full recording, hunting for the moments that matter, noting timestamps by hand, and then assembling a rough cut clip by clip. Industry estimates put this at <strong>3 to 10 hours of review per finished video</strong>, with the rough cut itself taking another <strong>4 to 8 hours</strong>. For a studio producing 50 to 100 videos a month, that&rsquo;s somewhere between <strong>$150,000 and $300,000 a year</strong> in labor spent on work that is almost entirely mechanical.</p>
+
+  <p>The tooling that exists today doesn&rsquo;t close this gap. Professional editors (Premiere, DaVinci) are manual-first &mdash; they don&rsquo;t automate anything by default. Transcription services turn audio into text but stop there; the text isn&rsquo;t <em>understood</em>, just transcribed. And the newer wave of &ldquo;AI video editors&rdquo; mostly do one thing: you give them a prompt, they give you a cut. No reasoning shown, no way to know <em>why</em> a clip was chosen over another, no way to trust the output without re-watching everything anyway.</p>
+
+  <p>That last gap &mdash; the <strong>trust gap</strong> &mdash; turned out to be the more interesting problem to solve.</p>
+
+  <hr>
+
+  <h2>The idea: make the footage describe itself</h2>
+
+  <p>The insight that shaped everything downstream was simple to state and harder to build: <strong>raw footage is opaque to machines.</strong> There&rsquo;s no structured representation of what&rsquo;s actually <em>in</em> a video &mdash; who&rsquo;s speaking, what they&rsquo;re saying, which moments are worth using, where the dead air is. Every editorial decision currently requires a human to watch the whole thing first.</p>
+
+  <p>So we built a structured, AI-generated model of a video&rsquo;s content and called it the <strong>digital twin</strong> &mdash; not a 3D render, but a queryable JSON object that mirrors what&rsquo;s inside the footage.</p>
+
+  <figure>
+    <img src="/blog/images/diagram-1-twin.svg" alt="Diagram showing raw footage on the left transforming into a structured digital twin on the right, with speakers, topics, key moments, and fillers as labeled blocks">
+    <figcaption>FIG. 1 &mdash; FROM RAW FOOTAGE TO A QUERYABLE TWIN</figcaption>
+  </figure>
+
+  <p>Concretely, the twin contains:</p>
+
+  <ul>
+    <li><strong>A timestamped transcript</strong>, word-level, produced by Whisper</li>
+    <li><strong>Speaker labels</strong>, inferred from conversational context (not audio diarization &mdash; a deliberate scope cut, more on that below)</li>
+    <li><strong>Topic segments</strong> &mdash; logical chapters of the conversation, not just sentence breaks</li>
+    <li><strong>Key moments</strong> &mdash; 5 to 15 AI-scored highlights, each rated 1&ndash;10 with a stated reason for the score</li>
+    <li><strong>Filler markers</strong> &mdash; ums, ahs, pauses, false starts, each timestamped for removal</li>
+  </ul>
+
+  <p>Once this exists, the footage stops being a linear file and starts being a database. An editor can type &ldquo;product demo&rdquo; and jump straight to that moment instead of scrubbing for twenty minutes. That alone is useful. But it&rsquo;s also the foundation for the part of the system we actually cared about proving.</p>
+
+  <hr>
+
+  <h2>The differentiator: an agent that argues with itself</h2>
+
+  <p>The easy version of &ldquo;AI rough cut&rdquo; is one prompt: <em>&ldquo;Here&rsquo;s the transcript, give me a 90-second cut.&rdquo;</em> That works, sort of. It also produces output nobody can audit, explain, or trust &mdash; which is exactly the problem we were trying to solve in the first place.</p>
+
+  <p>So instead of a single LLM call, we built what we ended up calling a <strong>bounded editor agent</strong> &mdash; a structured reasoning loop that mirrors how an actual editorial team works: a junior editor drafts, a senior editor critiques, the junior revises, and the cycle repeats until the work is good enough or the team runs out of time.</p>
+
+  <figure>
+    <img src="/blog/images/diagram-2-agent-loop.svg" alt="Flowchart of the bounded editor agent loop: Plan, Draft, Critique with pass/fail branches, Revise looping back to Critique, and a Final EDL output">
+    <figcaption>FIG. 2 &mdash; THE BOUNDED EDITOR AGENT LOOP</figcaption>
+  </figure>
+
+  <p>The loop has four phases, each a separate LLM call with its own role-framing:</p>
+
+  <ol>
+    <li><strong>Plan</strong> &mdash; Given the brief and the twin&rsquo;s summary, the agent acts as an <em>editorial strategist</em>. It decides the narrative arc, the themes to emphasize, and a pacing strategy &mdash; before touching a single clip.</li>
+    <li><strong>Draft</strong> &mdash; Acting as a <em>junior editor</em>, it selects clips from the twin&rsquo;s key moments and produces a structured Edit Decision List (EDL): an ordered, timestamped cut plan with a stated reason for every clip.</li>
+    <li><strong>Critique</strong> &mdash; Acting as a <em>senior editor reviewing the junior&rsquo;s work</em>, the agent evaluates its own draft against the brief. It returns a pass/fail, a 1&ndash;10 score, and &mdash; critically &mdash; a list of specific weaknesses with suggested fixes. The prompt explicitly biases this phase toward skepticism; an agent that always passes its own work isn&rsquo;t critiquing, it&rsquo;s rubber-stamping.</li>
+    <li><strong>Revise</strong> &mdash; If the critique fails, the agent goes back as the junior editor, now responding to specific feedback, and produces a new draft. The loop returns to Critique.</li>
+  </ol>
+
+  <p>In our test runs, this pattern surfaced real, non-trivial problems. One representative run: the first draft opened with a general problem statement and closed on a speculative, forward-looking quote. The critique flagged both &mdash; the opening was &ldquo;context, not hook,&rdquo; and the closer was &ldquo;speculative rather than proven.&rdquo; The revision swapped the opening for a concrete data point (&ldquo;editors spend 4 to 6 hours per video just watching footage&rdquo;) and replaced the ending with a scaling result (&ldquo;50 to 80 videos a month with the same team&rdquo;). The second critique passed at 8/10.</p>
+
+  <div class="callout">
+    That revision is the entire value proposition in miniature. A single-shot system would have shipped the weaker first draft and called it done.
+  </div>
+
+  <h3>Why &ldquo;bounded&rdquo; is not a compromise</h3>
+
+  <p>The obvious objection: why not let the agent loop freely until it&rsquo;s satisfied? We considered it and rejected it, for reasons that turned out to matter more than expected.</p>
+
+  <p>An unconstrained agent is a cost and reliability risk. Each loop iteration is a full LLM call with growing context &mdash; left unchecked, a single run can consume an unpredictable amount of budget, and a live demo audience will not wait through an open-ended loop. So we built five explicit guardrails directly into the agent&rsquo;s control flow:</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Guardrail</th><th>What it does</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Iteration cap</td><td>Hard ceiling of 3 revision cycles (default 2). After the cap, the agent exits with its best draft so far.</td></tr>
+        <tr><td>Token budget</td><td>~30,000 tokens per run, checked before each phase begins.</td></tr>
+        <tr><td>Schema validation</td><td>Every phase&rsquo;s response must parse as valid JSON matching a strict schema; one retry allowed, then the run terminates gracefully.</td></tr>
+        <tr><td>EDL sanity check</td><td>Clip boundaries must fall within the source video, not overlap, and stay within &plusmn;25% of the target duration.</td></tr>
+        <tr><td>Convergence detection</td><td>If two consecutive critiques surface the same weaknesses, the agent assumes it&rsquo;s stuck and stops rather than oscillating.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>Every one of these exits still returns the best draft seen &mdash; the agent never fails silently or returns nothing. And this turned out to be the more defensible engineering story, not a lesser one: production agent systems aren&rsquo;t free-running loops, they&rsquo;re constrained processes with explicit stopping conditions. Building bounded behavior in from the start was the realistic version of &ldquo;agentic,&rdquo; not a smaller one.</p>
+
+  <p>Cost-wise, this kept a typical agent run &mdash; plan, draft, critique, one revision, second critique &mdash; at roughly <strong>$0.10 to $0.22</strong>, comfortably inside a tight per-project budget even across dozens of test iterations.</p>
+
+  <hr>
+
+  <h2>What makes the agent&rsquo;s work auditable</h2>
+
+  <p>The thing that ties the twin and the agent together is the <strong>reasoning trace</strong> &mdash; a complete, structured record of everything the agent did: every phase, every draft, every critique, every token spent, timestamped and stored alongside the final output.</p>
+
+  <p>This is not a debug log bolted on after the fact. It&rsquo;s a first-class deliverable, rendered directly in the interface as a vertical timeline the user can expand phase by phase. Click into the failed critique and you see exactly which weaknesses were flagged and why. Click into the revision and you see what changed and which feedback it responded to.</p>
+
+  <p>That auditability is the actual differentiator &mdash; more than the agent loop itself. Most &ldquo;AI video editor&rdquo; tools give you an answer. This gives you the editorial reasoning behind the answer, which is what lets a human reviewer trust it, override it, or learn from it.</p>
+
+  <hr>
+
+  <h2>How it fits together</h2>
+
+  <p>The system runs as a single backend process &mdash; a deliberate choice over a microservices architecture, which we initially considered and rejected. Ten logical modules cover everything from upload to final export, but they communicate through function calls and a shared database, not network requests. That decision alone removed a meaningful amount of operational complexity: no service discovery, no inter-service auth, no distributed failure modes to debug under time pressure &mdash; while still keeping clean ownership boundaries between modules.</p>
+
+  <figure>
+    <img src="/blog/images/diagram-3-architecture.svg" alt="Architecture diagram showing ten modules in a modular monolith: Ingest, Transcribe, Twin Generator, Twin Store, Search, Editor Agent, Assembler, Output Store, Web UI, and API Gateway, color-coded by role">
+    <figcaption>FIG. 3 &mdash; SYSTEM ARCHITECTURE: A MODULAR MONOLITH</figcaption>
+  </figure>
+
+  <p>The pipeline, end to end:</p>
+
+  <ol>
+    <li><strong>Ingest</strong> accepts the upload and kicks off processing in the background.</li>
+    <li><strong>Transcription</strong> extracts audio and calls Whisper for a timestamped transcript.</li>
+    <li><strong>Twin Generator</strong> sends that transcript to Claude with a strict output schema, producing the structured twin.</li>
+    <li><strong>Search</strong> lets a user query the twin directly &mdash; keyword matching today, with semantic search via embeddings as a documented next step.</li>
+    <li><strong>Editor Agent</strong> runs the bounded loop described above, given a twin and a natural-language brief.</li>
+    <li><strong>Video Assembler</strong> takes the agent&rsquo;s final EDL, validates every clip boundary defensively (even though the agent already validated), and uses FFmpeg to cut, concatenate, and normalize audio into the delivered MP4.</li>
+  </ol>
+
+  <p>All shared data &mdash; the transcript shape, the twin shape, the EDL, the reasoning trace &mdash; is defined once as a set of validated data contracts and enforced at every boundary. A malformed twin or an overlapping clip in an EDL gets rejected at write time, not discovered three steps downstream during a demo.</p>
+
+  <hr>
+
+  <h2>What we learned</h2>
+
+  <p><strong>The critique step is where the value lives, not the draft step.</strong> It would have been easy to build &ldquo;draft, then ship&rdquo; and call it agentic. The entire differentiator &mdash; the thing that makes this defensible against &ldquo;isn&rsquo;t this just a wrapper around an API call?&rdquo; &mdash; is that the system evaluates its own work before committing to it, the same way any real editorial process does.</p>
+
+  <p><strong>Bounding the agent isn&rsquo;t a smaller version of agentic behavior &mdash; it&rsquo;s the production-realistic version.</strong> Unconstrained loops are a demo risk and a cost risk. Constrained loops with explicit exit conditions are what real systems actually look like in deployment.</p>
+
+  <p><strong>Auditability has to be designed in as a first-class output, not logged as an afterthought.</strong> The reasoning trace had to be structured well enough to render as a coherent UI from the start &mdash; phase by phase, with inputs, outputs, and timing &mdash; or it would have ended up as an unreadable debug dump nobody could use to build trust.</p>
+
+  <p><strong>Twin generation didn&rsquo;t need to be agentic, and forcing it to be would have been a mistake.</strong> Transcript-to-structured-metadata is a deterministic transformation; there&rsquo;s no creative judgment involved, so a single well-specified call does the job. The temptation to make <em>everything</em> agentic is real, but the right call was concentrating that complexity only where genuine editorial judgment was required.</p>
+
+  <hr>
+
+  <h2>Where this goes next</h2>
+
+  <p>The current scope deliberately covers two pieces of a much larger picture: ingest/understanding and AI-assisted rough cuts. Three more pillars sit on the roadmap, each building directly on the twin as the shared foundation:</p>
+
+  <ul>
+    <li><strong>Versioned edit history</strong> &mdash; git-style lineage across revisions, so every edit decision (human or agent) is tracked from raw footage to final deliverable</li>
+    <li><strong>Automated finishing</strong> &mdash; multi-platform export (16:9, 9:16, 1:1), auto-captioning, brand overlays</li>
+    <li><strong>Delivery packaging</strong> &mdash; direct publishing integrations, compliance metadata, platform-specific formatting</li>
+  </ul>
+
+  <p>None of those required rethinking what came first. The twin is the foundation; the agent pattern is reusable across all of them. That, more than any individual feature, is the part worth carrying forward: once footage is structured and an AI&rsquo;s editorial reasoning is visible and auditable, most of what comes next is a question of what you point the agent at &mdash; not whether the underlying architecture can support it.</p>
+
+</article>
+
+</div>
+<script src="/blog/post.js"></script>
+</body>
+</html>

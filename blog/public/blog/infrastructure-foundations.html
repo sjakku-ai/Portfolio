@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Infrastructure Every AI Engineer Needs to Understand — Sireesha Jakku</title>
+<link rel="stylesheet" href="/blog/post.css">
+<script>try{if(localStorage.getItem('theme')!=='dark')document.addEventListener('DOMContentLoaded',function(){document.body.classList.add('light')})}catch(e){}</script>
+</head>
+<body class="light">
+<div class="page">
+
+<header class="post-header">
+  <a href="/" class="home-link">← home</a>
+  <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">☀ DARK</button>
+</header>
+
+<article>
+  <p class="post-date">Jan 10, 2026</p>
+  <h1>AI System Design: Part-1 - The Infrastructure Every AI Engineer Needs to Understand</h1>
+  <p class="post-summary">Why the unglamorous plumbing of VMs, containers, and load balancers decides whether your model ever reaches users.</p>
+  <hr>
+
+  <p><em>Why the unglamorous plumbing of VMs, containers, and load balancers decides whether your model ever reaches users.</em></p>
+  <hr>
+
+  <p>There's a persistent fantasy in AI circles that the hard part is the model. Get the architecture right, tune the hyperparameters, hit good validation loss — and the rest is deployment detail. This fantasy gets engineers into trouble.</p>
+  <p>The infrastructure layer — compute, networking, storage, and communication — is where most AI projects die. Not because the models are bad, but because the systems around them weren't built for production reality: variable load, hardware failures, dependency hell, and the chaos of running software at scale.</p>
+  <hr>
+
+  <h2>Why AI Workloads Break Your Assumptions</h2>
+  <p>If your mental model of infrastructure comes from stateless, CPU-bound web services that scale by adding identical containers, AI inference breaks nearly every assumption.</p>
+  <p><strong>GPU dependency.</strong> A serving container needs specific GPU hardware, a compatible CUDA version, the right driver, and exact CUDA libraries — all version-locked. Mount the wrong driver and it crashes silently. This hardware-software coupling has no analog in web engineering.</p>
+  <p><strong>Memory behavior.</strong> Loading a model into VRAM takes 10–30 seconds; default Kubernetes liveness probes will kill the container before it's ready. A 7B model in FP16 needs 14GB, so a single 24GB A10G barely fits one copy.</p>
+  <p><strong>Batch sensitivity.</strong> In web services, low throughput means low cost. In GPU inference, an idle GPU is a money-burning disaster — production GPU utilization averages around 5%. You must batch aggressively or autoscale to zero between bursts.</p>
+
+  <div class="diagram">
+    <script type="text/mermaid">
+flowchart TD
+    Client --> LB[Load Balancer]
+    LB --> P1[Pod 1 Ready]
+    LB --> P2[Pod 2 Ready]
+    LB --> P3["Pod 3 Loading model..."]
+    P1 --> Cache[Feature + Embedding Cache]
+    P2 --> Cache
+    Cache --> GPU[GPU Forward Pass]
+    GPU --> Response
+    </script>
+    <div class="diagram-svg"></div>
+  </div>
+  <hr>
+
+  <h2>Compute: VMs, Containers, and Where Each Wins</h2>
+  <p>A <strong>virtual machine</strong> is a complete isolated computer; a hypervisor (ESXi, KVM, Hyper-V) carves the physical server into VMs, each with its own OS. Heavier (1–4GB overhead) but genuinely isolated. Cloud GPU instances <em>are</em> VMs — when you request a <code>p3.8xlarge</code>, you get a VM with a GPU passed through. The right call for long training runs and compliance isolation.</p>
+  <p><strong>Containers</strong> virtualize the OS, not the hardware. They start in seconds, add almost no overhead, and are fully described in a <code>Dockerfile</code>. For AI, they solve dependency hell: the image pins the exact Python, PyTorch, and CUDA libraries. The catch — GPU containers need the host to have the NVIDIA Container Toolkit and compatible drivers. Images bundle CUDA libraries but <em>not</em> drivers. This trips up everyone the first time.</p>
+
+  <h3>Kubernetes and the GPU Scheduling Problem</h3>
+  <p>Once you have more than a handful of containers, you need an orchestrator. But "Kubernetes for AI" differs sharply from "Kubernetes for web APIs":</p>
+  <p><strong>Gang scheduling.</strong> A distributed training job needs all 8 pods to start simultaneously or it wastes GPUs. Standard scheduling can't guarantee this; Volcano and NVIDIA's KAI Scheduler add gang awareness.</p>
+  <p><strong>GPU topology.</strong> Two GPUs on the same NVLink bus transfer at 600GB/s; across PCIe, maybe 16GB/s. A topology-blind scheduler can place a job on GPUs that talk 38× slower than optimal.</p>
+  <p><strong>Dynamic Resource Allocation (DRA).</strong> Kubernetes 1.34 (GA 2026) replaced the legacy Device Plugin framework, letting you declare rich requirements ("40GB+ VRAM, NVLink, MIG support"), not just "a GPU."</p>
+  <p><strong>Utilization.</strong> 100 A100s at 5% utilization burns ~$500K/month idle. The fix: aggressive batching plus scale-to-zero autoscaling. KEDA triggers on queue depth — the correct signal for inference — rather than CPU load.</p>
+  <hr>
+
+  <h2>Networking: The Parts You Can't Skip</h2>
+  <p>Every component — training servers, feature stores, model servers, monitors — is a node with an IP. DNS maps names to addresses, so your code references <code>feature-store.internal</code> instead of an IP that changes on restart. In Kubernetes, CoreDNS gives every Service a stable name that survives pod restarts.</p>
+  <p>A <strong>load balancer</strong> distributes requests across instances, which is what makes horizontal scaling real. The AI subtlety: not all instances are equal. A pod still loading a 14GB model isn't ready even though it's "running." <strong>Readiness probes</strong> distinguish "running" from "ready to serve" — critical when loading takes 20+ seconds. <strong>Session affinity</strong> (routing a user to the same pod) can boost cache hit rates when a pod has already cached that user's embeddings.</p>
+  <hr>
+
+  <h2>REST vs. gRPC: An Honest Decision</h2>
+  <p>Use <strong>REST</strong> for externally-facing APIs, large text/JSON payloads, easy debugging, and HTTP caching. Use <strong>gRPC</strong> for internal calls, dense numerical data (embeddings, tensors), and streaming — essential for LLM token streaming. A bonus often missed: gRPC's <code>.proto</code> files are a compile-time contract, so a schema change breaks the client at build time, not in production.</p>
+  <hr>
+
+  <h2>Storage: Match the Type to the Access Pattern</h2>
+  <p><strong>Object storage</strong> is the backbone — cheap and infinite, but 10–100ms latency makes it fine for batch, terrible for real-time serving. <strong>Block storage</strong> behaves like a local disk (sub-ms) for databases and caches. <strong>File storage</strong> offers a shared filesystem multiple training nodes can mount at once.</p>
+
+  <h3>The Vector Database Question</h3>
+  <p>Vector databases store embeddings and do <strong>approximate nearest-neighbor (ANN)</strong> search — finding semantically similar vectors without scanning everything. Algorithms like HNSW and IVF trade a little recall for huge speed: 10 nearest neighbors among 100M vectors in under 10ms. Choosing in 2026:</p>
+  <ul>
+    <li><strong>Pinecone</strong> — fully managed, fastest to ship; higher cost at scale.</li>
+    <li><strong>Qdrant</strong> — open-source, self-hostable, high performance at lower cost.</li>
+    <li><strong>pgvector</strong> — adds vectors to Postgres; pragmatic under ~5M vectors if you already run Postgres.</li>
+    <li><strong>Weaviate</strong> — strong for hybrid vector + attribute filtering and multi-tenancy.</li>
+  </ul>
+
+  <h3>Caching: Three Distinct Layers</h3>
+  <p>Conflating these leads to bad design. A <strong>feature cache</strong> (Redis/Memcached) holds slow-changing user/item features for single-digit-ms lookups. An <strong>embedding cache</strong> avoids re-embedding stable content. A <strong>response cache</strong> stores complete outputs for deterministic queries (FAQ-style), but not personalized or time-sensitive ones.</p>
+
+  <div class="diagram">
+    <script type="text/mermaid">
+flowchart LR
+    Request --> RC{Response Cache Hit?}
+    RC -->|Yes| Out[Return Response]
+    RC -->|No| FC[Feature Cache Redis]
+    FC --> EC[Embedding Cache]
+    EC --> GPU[GPU Model Forward Pass]
+    GPU --> Out
+    </script>
+    <div class="diagram-svg"></div>
+  </div>
+  <hr>
+
+  <h2>Architecture: The Answer Depends on Team Size</h2>
+  <p><strong>Start with a modular monolith — seriously.</strong> Microservices solve an <em>organizational</em> problem (many engineers deploying independently), not a technical one. Distributed systems add real complexity: network calls, serialization, service discovery, partial failures. A modular monolith with clean internal seams (ingestion, features, inference, monitoring) deploys as one unit while keeping the boundaries that allow future extraction. Shopify and Stack Overflow served millions as monoliths.</p>
+  <p>Split into services only when components have dramatically different scaling needs, separate deployment cadences, or need to be shared across products.</p>
+
+  <h3>Kafka as the System's Spine</h3>
+  <p>Kafka is a distributed, durable, ordered log. Unlike a queue that deletes consumed messages, it <em>retains</em> them, so multiple consumers read the same stream independently at their own offsets. One user event needs to update the feature profile, trigger a recommendation, feed logging, and maybe trigger retraining. Published once, consumed independently — and if a consumer crashes, it resumes where it left off with no events lost. This decoupling is what makes real-time AI systems maintainable.</p>
+
+  <div class="diagram">
+    <script type="text/mermaid">
+flowchart LR
+    Event[User Event] --> Kafka[(Kafka Retained Log)]
+    Kafka --> Features[Feature Profile Update]
+    Kafka --> Recs[Recommendation Engine]
+    Kafka --> Logging[Logging Service]
+    Kafka --> Retrain[Retraining Trigger]
+    </script>
+    <div class="diagram-svg"></div>
+  </div>
+  <hr>
+
+  <h2>Key Takeaways</h2>
+  <p>Choose the right compute per workload (VMs for GPU training, containers for serving). Solve Kubernetes GPU scheduling before it surprises you. Design caching across all three layers. Defer microservices until organizational scale demands them. Put Kafka at the center of your event flow from day one if you expect real-time features.</p>
+  <p>None of this is glamorous. But every model serving millions of users sits on infrastructure decisions someone got right before the model was ever trained.</p>
+
+  <div class="series-nav">
+    <p>Next: <a href="/blog/ml-data-and-training.html">Part 2 — From Raw Data to Trained Model →</a></p>
+  </div>
+
+  <div class="sources">
+    <p class="sources-title">Sources</p>
+    <ul>
+      <li><a href="https://www.cloudoptimo.com/blog/kubernetes-ai-infrastructure-in-2026-gpu-scheduling-and-production-realities/" target="_blank" rel="noopener">Kubernetes AI Infrastructure in 2026: GPU Scheduling &amp; Production Realities</a></li>
+      <li><a href="https://www.techplained.com/kubernetes-gpu-scheduling" target="_blank" rel="noopener">Kubernetes GPU Scheduling: DRA, KAI, MIG (2026)</a></li>
+      <li><a href="https://www.sdxcentral.com/news/kubernetes-efficiency-is-going-backwards-as-ai-drives-gpu-waste/" target="_blank" rel="noopener">Kubernetes efficiency is going backwards as AI drives GPU waste</a></li>
+      <li><a href="https://technijian.com/software-development/microservices-vs-monolith-for-startups-the-honest-2026-decision-guide/" target="_blank" rel="noopener">Microservices vs Monolith for Startups: 2026 Architecture Guide</a></li>
+      <li><a href="https://karthikeyanrathinam.medium.com/top-10-vector-databases-in-2026-ultimate-comparison-benchmarks-use-cases-6b0e878256b5" target="_blank" rel="noopener">Top 10 Vector Databases in 2026</a></li>
+      <li><a href="https://www.firecrawl.dev/blog/best-vector-databases" target="_blank" rel="noopener">Best Vector Databases in 2026: A Complete Comparison Guide</a></li>
+    </ul>
+  </div>
+</article>
+
+<nav class="post-nav">
+  <span></span>
+  <a href="/blog/ml-data-and-training.html" class="nav-next">
+    <span class="nav-label">Next</span>
+    From Raw Data to Trained Model →
+  </a>
+</nav>
+
+</div>
+<script type="module" src="/blog/post.js"></script>
+</body>
+</html>
