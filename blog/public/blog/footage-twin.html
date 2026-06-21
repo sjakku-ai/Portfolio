@@ -30,7 +30,11 @@
 <div class="page">
 
 <header class="post-header">
-  <a href="/" class="home-link">← home</a>
+  <nav>
+    <a href="/" class="nav-link">home</a>
+    <a href="/blog" class="nav-link active">blog</a>
+    <a href="/roadmap.html" class="nav-link">AI Engineer Roadmap</a>
+  </nav>
   <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">☀ DARK</button>
 </header>
 
@@ -190,6 +194,24 @@
   <p>None of those required rethinking what came first. The twin is the foundation; the agent pattern is reusable across all of them. That, more than any individual feature, is the part worth carrying forward: once footage is structured and an AI&rsquo;s editorial reasoning is visible and auditable, most of what comes next is a question of what you point the agent at &mdash; not whether the underlying architecture can support it.</p>
 
 </article>
+
+<div class="more-posts">
+  <p class="more-posts-label">// more posts</p>
+  <div class="more-posts-list">
+    <a href="/blog/architect_blueprint_embeddings_vector_db.html" class="more-post-card">
+      <span class="more-post-title">The Architect's Blueprint: Demystifying Embeddings and Vector Databases in Production</span>
+      <span class="more-post-date">April 1, 2026</span>
+    </a>
+    <a href="/blog/advanced_rag_blog_post.html" class="more-post-card">
+      <span class="more-post-title">Mastering the Next Level: A Deep Dive into Advanced RAG</span>
+      <span class="more-post-date">March 15, 2026</span>
+    </a>
+    <a href="/blog/economics-and-responsible-ai.html" class="more-post-card">
+      <span class="more-post-title">AI System Design: Part-5 — The Economics and Ethics of Production AI</span>
+      <span class="more-post-date">February 7, 2026</span>
+    </a>
+  </div>
+</div>
 
 </div>
 <script src="/blog/post.js"></script>

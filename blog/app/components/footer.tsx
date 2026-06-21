@@ -1,5 +1,4 @@
 const links = [
-  { href: '/rss', label: 'rss' },
   { href: 'https://github.com/sjakku-ai', label: 'github', external: true },
   { href: 'https://www.linkedin.com/in/sireesha-jakku-a663751b/', label: 'linkedin', external: true },
 ]

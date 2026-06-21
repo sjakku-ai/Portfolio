@@ -29,6 +29,16 @@ body {
   margin-bottom: 48px; padding-bottom: 16px;
   border-bottom: 1px solid var(--border);
 }
+.post-header nav { display: flex; gap: 2px; }
+.nav-link {
+  font-family: 'Geist Mono', monospace; font-size: 12px;
+  letter-spacing: 0.04em; padding: 6px 12px; border-radius: 6px;
+  text-decoration: none; transition: color 0.15s, background 0.15s;
+  color: var(--muted); background: transparent; border: 1px solid transparent;
+}
+.nav-link:hover { color: var(--text); text-decoration: none; }
+.nav-link.active { color: var(--text); background: var(--surface2); border-color: var(--border2); }
+/* keep home-link for backward compat */
 .home-link {
   font-family: 'Geist Mono', monospace; font-size: 12px;
   letter-spacing: 0.04em; color: var(--muted); text-decoration: none;
@@ -103,3 +113,17 @@ pre code { background: none; border: none; padding: 0; font-size: 13px; }
 /* series links */
 .series-nav { font-size: 13px; color: var(--muted); margin-top: 32px; }
 .series-nav a { color: var(--accent); }
+
+/* more posts */
+.more-posts { margin-top: 48px; padding-top: 32px; border-top: 1px solid var(--border); }
+.more-posts-label { font-family: 'Geist Mono', monospace; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--dim); margin-bottom: 14px; }
+.more-posts-list { display: flex; flex-direction: column; gap: 10px; }
+.more-post-card {
+  display: flex; justify-content: space-between; align-items: baseline;
+  gap: 12px; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; padding: 14px 18px; text-decoration: none;
+  transition: border-color 0.15s;
+}
+.more-post-card:hover { border-color: var(--border2); text-decoration: none; }
+.more-post-title { font-size: 14px; font-weight: 500; color: var(--text); line-height: 1.4; }
+.more-post-date { font-family: 'Geist Mono', monospace; font-size: 11px; color: var(--dim); white-space: nowrap; flex-shrink: 0; }

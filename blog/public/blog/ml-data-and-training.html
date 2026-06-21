@@ -11,7 +11,11 @@
 <div class="page">
 
 <header class="post-header">
-  <a href="/" class="home-link">← home</a>
+  <nav>
+    <a href="/" class="nav-link">home</a>
+    <a href="/blog" class="nav-link active">blog</a>
+    <a href="/roadmap.html" class="nav-link">AI Engineer Roadmap</a>
+  </nav>
   <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">☀ DARK</button>
 </header>
 
@@ -133,6 +137,24 @@ flowchart LR
     Deploying and Keeping AI Models Alive →
   </a>
 </nav>
+
+<div class="more-posts">
+  <p class="more-posts-label">// more posts</p>
+  <div class="more-posts-list">
+    <a href="/blog/footage-twin.html" class="more-post-card">
+      <span class="more-post-title">Building FootageTwin: An AI Agent That Edits Video Like a Junior Editor Under Review</span>
+      <span class="more-post-date">May 20, 2026</span>
+    </a>
+    <a href="/blog/architect_blueprint_embeddings_vector_db.html" class="more-post-card">
+      <span class="more-post-title">The Architect's Blueprint: Demystifying Embeddings and Vector Databases in Production</span>
+      <span class="more-post-date">April 1, 2026</span>
+    </a>
+    <a href="/blog/advanced_rag_blog_post.html" class="more-post-card">
+      <span class="more-post-title">Mastering the Next Level: A Deep Dive into Advanced RAG</span>
+      <span class="more-post-date">March 15, 2026</span>
+    </a>
+  </div>
+</div>
 
 </div>
 <script type="module" src="/blog/post.js"></script>
