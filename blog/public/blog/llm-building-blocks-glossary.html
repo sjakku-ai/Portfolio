@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LLM Building Blocks: A Plain-English Glossary — Sireesha Jakku</title>
+<link rel="stylesheet" href="/blog/post.css">
+<script>try{if(localStorage.getItem('theme')!=='dark')document.addEventListener('DOMContentLoaded',function(){document.body.classList.add('light')})}catch(e){}</script>
+</head>
+<body class="light">
+<script>try{if(localStorage.getItem('theme')==='dark')document.body.classList.remove('light')}catch(e){}</script>
+<div class="page">
+
+<header class="post-header">
+  <nav>
+    <a href="/" class="nav-link">home</a>
+    <a href="/blog" class="nav-link active">blog</a>
+    <a href="/roadmap.html" class="nav-link">AI Engineer Roadmap</a>
+  </nav>
+  <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">☀ DARK</button>
+</header>
+
+<article>
+  <p class="post-date">Jun 30, 2026</p>
+  <h1>LLM Building Blocks: A Plain-English Glossary</h1>
+  <p class="post-summary">The terms you keep running into when building with language models — defined without the hand-waving.</p>
+  <hr>
+
+  <p>Every time you build something on top of a language model, you hit the same wall of jargon: logits, autoregressive, embeddings, RAG. Most explanations either skip the definition entirely or bury it in math. This glossary defines the terms the way you actually need them — precise enough to be useful, plain enough to stick.</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Term</th>
+          <th>Plain English</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Token</strong></td>
+          <td>A chunk of text. Could be a word, part of a word, or a single character, depending on the tokenizer. Models work in tokens, not characters or words.</td>
+        </tr>
+        <tr>
+          <td><strong>Tokenizer</strong></td>
+          <td>The thing that chops text into tokens and assigns each token a number (an ID). It also reverses the process — turns IDs back into text.</td>
+        </tr>
+        <tr>
+          <td><strong>Vocabulary</strong></td>
+          <td>The full list of tokens the tokenizer knows. GPT-2's is ~50,000 tokens.</td>
+        </tr>
+        <tr>
+          <td><strong>Logits</strong></td>
+          <td>The raw scores the model outputs for every token in the vocabulary. A vector of ~50,000 numbers per generation step.</td>
+        </tr>
+        <tr>
+          <td><strong>Softmax</strong></td>
+          <td>A math function that turns the score vector (logits) into probabilities that add up to 1. So "logits = scores, softmax(logits) = probabilities."</td>
+        </tr>
+        <tr>
+          <td><strong>Decoding strategy</strong></td>
+          <td>The rule you use to pick <em>which</em> token to emit from the probability list — pick the highest one (greedy), sample with randomness (top-k/top-p), etc.</td>
+        </tr>
+        <tr>
+          <td><strong>Autoregressive</strong></td>
+          <td>Fancy word for "generates one token at a time, feeding each new token back in to produce the next."</td>
+        </tr>
+        <tr>
+          <td><strong>Embedding</strong></td>
+          <td>A way of representing a token (or a position) as a vector of numbers the model can do math on. The model can't multiply the word "cat" — it can multiply the vector that <em>represents</em> "cat."</td>
+        </tr>
+        <tr>
+          <td><strong>Tensor</strong></td>
+          <td>A multi-dimensional array of numbers. In PyTorch, it's the basic data container — like a NumPy array but designed to run on GPUs and track gradients.</td>
+        </tr>
+        <tr>
+          <td><strong>Model weights / parameters</strong></td>
+          <td>The billions of numbers learned during training that make the model "know stuff." When you load GPT-2 you're loading its weights.</td>
+        </tr>
+        <tr>
+          <td><strong>Training</strong></td>
+          <td>Showing the model lots of text and adjusting its weights so its next-word predictions get better. You will <strong>not</strong> be doing this for the summarizer — GPT-2 is already trained. You will do it briefly in Phase 1.5 on a toy model, for understanding.</td>
+        </tr>
+        <tr>
+          <td><strong>Inference</strong></td>
+          <td>Using a trained model to make predictions. That's what your summarizer does.</td>
+        </tr>
+        <tr>
+          <td><strong>RAG</strong></td>
+          <td>Retrieval-Augmented Generation. Fancy term for "fetch some relevant external text and stick it into the prompt so the model has the facts it needs." Your project's "retrieval" is just fetching the URL the user gives you.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</article>
+
+<nav class="post-nav">
+  <a href="/blog/advanced-ai-architectures.html">
+    <span class="nav-label">Previous</span>
+    ← Advanced AI Architectures
+  </a>
+</nav>
+
+<div class="more-posts">
+  <p class="more-posts-label">// more posts</p>
+  <div class="more-posts-list">
+    <a href="/blog/footage-twin.html" class="more-post-card">
+      <span class="more-post-title">Building FootageTwin: An AI Agent That Edits Video Like a Junior Editor Under Review</span>
+      <span class="more-post-date">May 20, 2026</span>
+    </a>
+    <a href="/blog/architect_blueprint_embeddings_vector_db.html" class="more-post-card">
+      <span class="more-post-title">The Architect's Blueprint: Demystifying Embeddings and Vector Databases in Production</span>
+      <span class="more-post-date">April 1, 2026</span>
+    </a>
+    <a href="/blog/advanced_rag_blog_post.html" class="more-post-card">
+      <span class="more-post-title">Mastering the Next Level: A Deep Dive into Advanced RAG</span>
+      <span class="more-post-date">March 15, 2026</span>
+    </a>
+  </div>
+</div>
+
+</div>
+<script type="module" src="/blog/post.js"></script>
+</body>
+</html>
