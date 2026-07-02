@@ -68,6 +68,22 @@
 
   <p>I&rsquo;m working from two references I found while researching this: a walkthrough video and a course on building an LLM backbone from scratch. Both are linked below. </p>
 
+  <hr>
+
+  <h2>The build order</h2>
+
+  <p>Rather than building everything at once, I&rsquo;m sequencing this so each step validates the one before it &mdash; get a basic pipeline working end to end first, then layer in complexity one piece at a time instead of debugging five new things simultaneously. Here&rsquo;s the order I&rsquo;ll be following:</p>
+
+  <ol>
+    <li>Get GPT-2 + the Hugging Face tokenizer doing basic generation through my own greedy-decode loop &mdash; this validates the pipeline works end to end.</li>
+    <li>Add live URL fetching and cleaning, and wire the result into the prompt.</li>
+    <li>Add temperature, repetition penalty, and logit bias.</li>
+    <li>Add top-k and top-p sampling.</li>
+    <li>Add beam search last, since it&rsquo;s the hardest to debug.</li>
+    <li>Build a custom BPE tokenizer as a side track for learning, and swap it in once it matches GPT-2&rsquo;s vocab behavior on test strings.</li>
+    <li>Wrap it in FastAPI, then Streamlit.</li>
+  </ol>
+
 </article>
 
 <div class="sources">
