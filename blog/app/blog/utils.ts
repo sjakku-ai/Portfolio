@@ -9,6 +9,14 @@ export type BlogPost = {
 
 const posts: BlogPost[] = [
   {
+    slug: 'llm-building-blocks-glossary',
+    metadata: {
+      title: 'LLM Building Blocks: A Plain-English Glossary',
+      publishedAt: '2026-06-30',
+      summary: 'The terms you keep running into when building with language models — defined without the hand-waving.',
+    },
+  },
+  {
     slug: 'footage-twin',
     metadata: {
       title: 'Building FootageTwin: An AI Agent That Edits Video Like a Junior Editor Under Review',
