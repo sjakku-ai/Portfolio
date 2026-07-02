@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Building a GPT From Scratch, Part 2: Probability Distributions, Softmax, and Temperature — Sireesha Jakku</title>
+<meta name="description" content="Building gut-level intuition for how a language model turns raw scores into word choices — probability distributions, the softmax formula, and how temperature dials a model between decisive and adventurous.">
+<link rel="stylesheet" href="/blog/post.css">
+<script>try{if(localStorage.getItem('theme')!=='dark')document.addEventListener('DOMContentLoaded',function(){document.body.classList.add('light')})}catch(e){}</script>
+<style>
+  .eyebrow { font-family: 'Geist Mono', monospace; font-size: 11px; letter-spacing: 0.12em; color: var(--accent); text-transform: uppercase; margin-bottom: 10px; }
+  .post-table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 14px; }
+  .post-table th, .post-table td { border: 1px solid var(--border); padding: 8px 12px; text-align: left; }
+  .post-table th { background: var(--surface); font-family: 'Geist Mono', monospace; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+</style>
+</head>
+<body class="light">
+<script>try{if(localStorage.getItem('theme')==='dark')document.body.classList.remove('light')}catch(e){}</script>
+<div class="page">
+
+<header class="post-header">
+  <nav>
+    <a href="/" class="nav-link">home</a>
+    <a href="/blog" class="nav-link active">blog</a>
+    <a href="/roadmap.html" class="nav-link">AI Engineer Roadmap</a>
+  </nav>
+  <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">☀ DARK</button>
+</header>
+
+<article>
+  <p class="eyebrow">Build Log &middot; GPT From Scratch &middot; Part 2</p>
+  <p class="post-date">Jul 2, 2026</p>
+  <h1>Building a GPT From Scratch, Part 2: Probability Distributions, Softmax, and Temperature</h1>
+  <p class="post-summary">Before touching any generation code, I wanted gut-level intuition for how a model&rsquo;s raw scores become the word it actually picks &mdash; and how a single &ldquo;temperature&rdquo; number reshapes that choice from decisive to adventurous.</p>
+  <hr>
+
+  <p>In <a href="/blog/gpt-from-scratch-part-1.html">Part 1</a>, I laid out the four-problem shape of a GPT-like chatbot: data, tokenization, generation, and the app wrapped around it. Step three on my build order was adding temperature, repetition penalty, and logit bias to a basic decode loop &mdash; but before writing any of that code, I stopped to make sure I actually understood the math it leans on. This post is that groundwork: probability distributions, softmax, and temperature, in that order.</p>
+
+  <hr>
+
+  <h2>Probability distribution: splitting 100% across the options</h2>
+
+  <p>An LLM&rsquo;s whole job, at generation time, is predicting what word comes next. A probability distribution is just the formal way of expressing &ldquo;how likely is each option,&rdquo; where every likelihood is non-negative and the whole set adds up to 1. Roll a fair die and you get the distribution {1/6, 1/6, 1/6, 1/6, 1/6, 1/6}. Ask a language model what token comes next, and it hands back a distribution over its entire vocabulary &mdash; one probability per possible next token.</p>
+
+  <div class="callout" style="background: var(--surface); border: 1px solid var(--border); border-left: 2px solid var(--accent); border-radius: 8px; padding: 16px 20px; margin: 24px 0; font-size: 14px; line-height: 1.6; color: var(--muted);">
+    Ask a friend &ldquo;what should we eat tonight?&rdquo; and their preferences might work out to 50% pizza, 30% sushi, 20% tacos. That&rsquo;s a probability distribution &mdash; a way of splitting &ldquo;how likely&rdquo; across options so it all adds up to 100%.
+  </div>
+
+  <hr>
+
+  <h2>Softmax: turning messy scores into clean percentages</h2>
+
+  <p>Neural networks don&rsquo;t output probabilities directly. They output raw, unbounded numbers called <strong>logits</strong> &mdash; something like [2.0, 1.0, 0.1]. Softmax is the function that converts logits into a valid probability distribution:</p>
+
+  <p style="text-align:center; font-family: 'Geist Mono', monospace;">softmax(x<sub>i</sub>) = e<sup>x<sub>i</sub></sup> / &Sigma;<sub>j</sub> e<sup>x<sub>j</sub></sup></p>
+
+  <p>Three things happen in that formula:</p>
+
+  <ol>
+    <li>Each logit gets exponentiated, which makes every value positive.</li>
+    <li>Everything is divided by the sum of all the exponentials, so the results add up to exactly 1.</li>
+    <li>Because exponentials amplify differences, larger logits get <em>disproportionately</em> larger probabilities &mdash; the ranking is preserved, but the gaps widen.</li>
+  </ol>
+
+  <p>So [2.0, 1.0, 0.1] becomes roughly [66%, 24%, 10%]. The highest logit dominates, but the rest still get some probability mass instead of being zeroed out.</p>
+
+  <p>Back to the dinner analogy: before your friend turns their gut feeling into neat percentages, their brain has messy scores that don&rsquo;t add up to anything &mdash; say pizza = 8, sushi = 5, tacos = 3. Softmax is the recipe that converts those messy scores into clean percentages that sum to 100%, while keeping the same ranking.</p>
+
+  <hr>
+
+  <h2>Temperature: the dial between decisive and adventurous</h2>
+
+  <p>Temperature is a scaling factor applied to the logits <em>before</em> softmax runs:</p>
+
+  <p style="text-align:center; font-family: 'Geist Mono', monospace;">softmax(x<sub>i</sub> / T)</p>
+
+  <ul>
+    <li><strong>T = 1</strong> &mdash; standard softmax, no change.</li>
+    <li><strong>T &lt; 1</strong> (e.g. 0.5) &mdash; sharpens the distribution. The model gets more confident, favoring the top option more strongly. As T &rarr; 0, it approaches always picking the single most likely token (argmax) &mdash; deterministic, and often repetitive.</li>
+    <li><strong>T &gt; 1</strong> (e.g. 2.0) &mdash; flattens the distribution. Probability mass spreads out toward less-likely options &mdash; more varied, more creative, but more prone to incoherence.</li>
+  </ul>
+
+  <p>Temperature doesn&rsquo;t change <em>what</em> the model prefers &mdash; the ranking of options never moves. It changes how strongly that preference gets acted on.</p>
+
+  <hr>
+
+  <h2>A worked example: dinner with logits</h2>
+
+  <p>Same friend, same decision, now with actual gut-feeling scores (logits) for four options:</p>
+
+  <table class="post-table">
+    <tr><th>Food</th><th>Logit</th></tr>
+    <tr><td>pizza</td><td>4.0</td></tr>
+    <tr><td>sushi</td><td>3.0</td></tr>
+    <tr><td>tacos</td><td>2.0</td></tr>
+    <tr><td>tofu bowl</td><td>1.0</td></tr>
+  </table>
+
+  <p><strong>T = 1 (neutral):</strong> pizza 64%, sushi 24%, tacos 9%, tofu bowl 3%. Pizza dominates, but everyone else still gets a fair shot.</p>
+
+  <p><strong>T = 0.5 (low, sharper):</strong> dividing every logit by 0.5 doubles them to [8, 6, 4, 2], which softmax turns into pizza 88%, sushi 12%, tacos 0.7%, tofu bowl 0.1%. Your friend becomes decisive to the point of predictable &mdash; pizza, pizza, pizza.</p>
+
+  <p><strong>T = 2 (high, flatter):</strong> dividing by 2 gives [2.0, 1.5, 1.0, 0.5], which softmax turns into pizza 46%, sushi 28%, tacos 17%, tofu bowl 10%. The weakest option, tofu bowl, climbs from 3% all the way to 10%. Your friend gets more spontaneous, more willing to try something other than the favorite.</p>
+
+  <table class="post-table">
+    <tr><th></th><th>T = 0.5</th><th>T = 1</th><th>T = 2</th></tr>
+    <tr><td>Top choice (pizza)</td><td>88%</td><td>64%</td><td>46%</td></tr>
+    <tr><td>Weakest (tofu bowl)</td><td>0.1%</td><td>3%</td><td>10%</td></tr>
+  </table>
+
+  <p>The pattern: as temperature rises, probability mass flows away from the favorite and toward the underdogs. The ranking never flips &mdash; pizza is always on top &mdash; only the strength of commitment to it changes. That&rsquo;s exactly the knob I&rsquo;ll be wiring into the decode loop next: low temperature for safe, deterministic text; high temperature for text that takes more risks with less-likely words.</p>
+
+</article>
+
+<div class="more-posts">
+  <p class="more-posts-label">// more posts</p>
+  <div class="more-posts-list">
+    <a href="/blog/gpt-from-scratch-part-1.html" class="more-post-card">
+      <span class="more-post-title">Building a GPT From Scratch, Part 1: Why Build It Instead of Just Calling an API?</span>
+      <span class="more-post-date">July 2, 2026</span>
+    </a>
+    <a href="/blog/llm-building-blocks-glossary.html" class="more-post-card">
+      <span class="more-post-title">LLM Building Blocks: A Plain-English Glossary</span>
+      <span class="more-post-date">June 30, 2026</span>
+    </a>
+    <a href="/blog/footage-twin.html" class="more-post-card">
+      <span class="more-post-title">Building FootageTwin: An AI Agent That Edits Video Like a Junior Editor Under Review</span>
+      <span class="more-post-date">May 20, 2026</span>
+    </a>
+  </div>
+</div>
+
+</div>
+<script type="module" src="/blog/post.js"></script>
+</body>
+</html>

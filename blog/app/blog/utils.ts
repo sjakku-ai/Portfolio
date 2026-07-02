@@ -9,10 +9,18 @@ export type BlogPost = {
 
 const posts: BlogPost[] = [
   {
+    slug: 'gpt-from-scratch-part-2',
+    metadata: {
+      title: 'Building a GPT From Scratch, Part 2: Probability Distributions, Softmax, and Temperature',
+      publishedAt: '2026-07-02',
+      summary: 'Building gut-level intuition for how a model turns raw scores into word choices — probability distributions, the softmax formula, and how temperature dials a model between decisive and adventurous.',
+    },
+  },
+  {
     slug: 'gpt-from-scratch-part-1',
     metadata: {
       title: 'Building a GPT From Scratch, Part 1: Why Build It Instead of Just Calling an API?',
-      publishedAt: '2026-07-02',
+      publishedAt: '2026-07-01',
       summary: 'Starting a new series: 20-30 minutes a day building a mini GPT-like chatbot from the ground up, to actually understand the tokenization → inference → decoding pipeline.',
     },
   },
