@@ -9,6 +9,14 @@ export type BlogPost = {
 
 const posts: BlogPost[] = [
   {
+    slug: 'gpt-from-scratch-part-1',
+    metadata: {
+      title: 'Building a GPT From Scratch, Part 1: Why Build It Instead of Just Calling an API?',
+      publishedAt: '2026-07-02',
+      summary: 'Starting a new series: 20-30 minutes a day building a mini GPT-like chatbot from the ground up, to actually understand the tokenization → inference → decoding pipeline.',
+    },
+  },
+  {
     slug: 'llm-building-blocks-glossary',
     metadata: {
       title: 'LLM Building Blocks: A Plain-English Glossary',

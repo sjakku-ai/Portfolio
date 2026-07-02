@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Building a GPT From Scratch, Part 1: Why Build It Instead of Just Calling an API? — Sireesha Jakku</title>
+<meta name="description" content="Kicking off a build-in-public series: a mini GPT-like chatbot built from scratch, 20-30 minutes a day, to actually understand tokenization, inference, and decoding instead of just calling an API.">
+<link rel="stylesheet" href="/blog/post.css">
+<script>try{if(localStorage.getItem('theme')!=='dark')document.addEventListener('DOMContentLoaded',function(){document.body.classList.add('light')})}catch(e){}</script>
+<style>
+  .eyebrow { font-family: 'Geist Mono', monospace; font-size: 11px; letter-spacing: 0.12em; color: var(--accent); text-transform: uppercase; margin-bottom: 10px; }
+</style>
+</head>
+<body class="light">
+<script>try{if(localStorage.getItem('theme')==='dark')document.body.classList.remove('light')}catch(e){}</script>
+<div class="page">
+
+<header class="post-header">
+  <nav>
+    <a href="/" class="nav-link">home</a>
+    <a href="/blog" class="nav-link active">blog</a>
+    <a href="/roadmap.html" class="nav-link">AI Engineer Roadmap</a>
+  </nav>
+  <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">☀ DARK</button>
+</header>
+
+<article>
+  <p class="eyebrow">Build Log &middot; GPT From Scratch &middot; Part 1</p>
+  <p class="post-date">Jul 2, 2026</p>
+  <h1>Building a GPT From Scratch, Part 1: Why Build It Instead of Just Calling an API?</h1>
+  <p class="post-summary">Starting a new series: 20&ndash;30 minutes a day building a mini GPT-like chatbot from the ground up, to actually understand the tokenization &rarr; inference &rarr; decoding pipeline instead of just knowing how to call it.</p>
+  <hr>
+
+  <p>It&rsquo;s never been easier to add an LLM to a project &mdash; import a client, drop in an API key, send a prompt, get text back. That&rsquo;s the right call for almost every real product. But it also means it&rsquo;s possible to build AI features for years without ever knowing what happens between the prompt going in and the text coming out.</p>
+
+  <p>I&rsquo;d rather not be in that position. So instead of calling someone else&rsquo;s model, I&rsquo;m building a small one myself &mdash; a mini GPT-like chatbot, from scratch, piece by piece. I believe, the fastest way to actually understand how a language model works is to build a working, if tiny, version of one.</p>
+
+  <p>This post is the kickoff: what I&rsquo;m building, why, and the four-part roadmap I&rsquo;ll be working through in public, 20&ndash;30 minutes at a time.</p>
+
+  <hr>
+
+  <h2>The plan, in plain English</h2>
+
+  <p>Stripped of jargon, an LLM chatbot is four problems stacked on top of each other:</p>
+
+  <ol>
+    <li><strong>Getting the text to train with</strong> &mdash; data collection. A model can&rsquo;t predict language it&rsquo;s never seen.</li>
+    <li><strong>Turning words into numbers</strong> &mdash; tokenization. Models don&rsquo;t read text; they do math on numbers, so the text has to become numbers first.</li>
+    <li><strong>Getting the AI to predict the next word</strong> &mdash; text generation. This is the actual &ldquo;model&rdquo; part: given everything so far, what comes next?</li>
+    <li><strong>Turning it into a real app</strong> &mdash; wrapping the model in something a person can actually use.</li>
+  </ol>
+
+  <p>Each of those is its own rabbit hole, and I&rsquo;m planning to spend real time in each one rather than rushing to a demo. The end goal is a working &ldquo;Custom GPT&rdquo; web app that can summarize content from any URL I feed it &mdash; a small, concrete product, built on a real (if small) understanding of the pipeline that powers tools like ChatGPT, rather than just the skill of prompting one.</p>
+
+  <hr>
+
+  <h2>Why bother, when the APIs are right there</h2>
+
+  <p>Because using an API and understanding the system are different skills, and only one of them transfers when something breaks. When a hosted model does something unexpected &mdash; truncates output, hallucinates, gets the context window wrong, costs more than expected &mdash; the people who can actually reason about <em>why</em> are the ones who understand what&rsquo;s happening under the hood: how tokenization works, why generation is autoregressive, what decoding strategy is doing to the output. Calling an API teaches you the interface. Building the pipeline teaches you the system.</p>
+
+  <div class="callout" style="background: var(--surface); border: 1px solid var(--border); border-left: 2px solid var(--accent); border-radius: 8px; padding: 16px 20px; margin: 24px 0; font-size: 14px; line-height: 1.6; color: var(--muted);">
+    The goal isn&rsquo;t to out-build GPT-4. It&rsquo;s to be able to open up any LLM-powered system and know exactly what every layer is doing.
+  </div>
+
+  <hr>
+
+  <h2>Following along</h2>
+
+  <p>I&rsquo;m working from two references I found while researching this: a walkthrough video and a course on building an LLM backbone from scratch. Both are linked below. I&rsquo;ll credit specific ideas back to them as the series goes, rather than presenting borrowed explanations as my own.</p>
+
+  <p>Next up: Part 2, where I actually start on data collection &mdash; what &ldquo;training data&rdquo; means at this scale, and what it takes to get from a pile of text to something a model can learn from.</p>
+
+</article>
+
+<div class="sources">
+  <p class="sources-title">// references</p>
+  <ul>
+    <li><a href="https://www.youtube.com/watch?v=kCc8FmEb1nY&t=2s" target="_blank" rel="noopener">Build a GPT from scratch (YouTube)</a></li>
+    <li><a href="https://kuriko-iwai.com/courses/llm-backbone-custom-gpt" target="_blank" rel="noopener">LLM Backbone: Custom GPT course</a></li>
+  </ul>
+</div>
+
+<div class="more-posts">
+  <p class="more-posts-label">// more posts</p>
+  <div class="more-posts-list">
+    <a href="/blog/llm-building-blocks-glossary.html" class="more-post-card">
+      <span class="more-post-title">LLM Building Blocks: A Plain-English Glossary</span>
+      <span class="more-post-date">June 30, 2026</span>
+    </a>
+    <a href="/blog/footage-twin.html" class="more-post-card">
+      <span class="more-post-title">Building FootageTwin: An AI Agent That Edits Video Like a Junior Editor Under Review</span>
+      <span class="more-post-date">May 20, 2026</span>
+    </a>
+    <a href="/blog/architect_blueprint_embeddings_vector_db.html" class="more-post-card">
+      <span class="more-post-title">The Architect's Blueprint: Demystifying Embeddings and Vector Databases in Production</span>
+      <span class="more-post-date">April 1, 2026</span>
+    </a>
+  </div>
+</div>
+
+</div>
+<script type="module" src="/blog/post.js"></script>
+</body>
+</html>
