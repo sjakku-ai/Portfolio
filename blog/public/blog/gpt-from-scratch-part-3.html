@@ -38,17 +38,7 @@
 
   <h2>load_and_generate_gpt2.py: loading a pretrained checkpoint</h2>
 
-  <p>This script is the &ldquo;hello world&rdquo; of using a pretrained model, broken into deliberate steps:</p>
-
-  <ol>
-    <li><strong>Load a tokenizer that matches the model.</strong> A model only understands numbers, and every pretrained model was trained against one specific tokenizer &mdash; using a different one would mean the same number means something different to the model than intended. <code>AutoTokenizer.from_pretrained("gpt2")</code> pulls the exact tokenizer GPT-2 was trained with.</li>
-    <li><strong>Load the pretrained weights.</strong> <code>"gpt2"</code> is a checkpoint name &mdash; a saved snapshot of a neural network&rsquo;s learned parameters after training, hosted on the Hugging Face Hub. Rather than spending OpenAI-scale compute retraining GPT-2 from nothing, <code>AutoModelForCausalLM.from_pretrained("gpt2")</code> downloads those already-learned weights straight into a GPT-2-shaped model. &ldquo;CausalLM&rdquo; just means it was trained to predict the next token given everything before it &mdash; a text-generation model, not a classifier.</li>
-    <li><strong><code>model.eval()</code>.</strong> Some layers, like Dropout, behave differently during training (randomly disabling neurons to prevent overfitting) than during real use. <code>.eval()</code> switches every such layer into inference mode &mdash; a standing habit any time you&rsquo;re not actively training.</li>
-    <li><strong>Encode the prompt.</strong> <code>tokenizer(prompt, return_tensors="pt")</code> turns the text into a PyTorch tensor of token IDs, shaped <code>(batch=1, sequence_length)</code>.</li>
-    <li><strong>Generate, inside <code>torch.no_grad()</code>.</strong> Gradients are only needed for training, to work out how to adjust weights via backpropagation. Since this is a forward pass only, tracking gradients would burn memory and compute for nothing &mdash; so it&rsquo;s disabled.</li>
-  </ol>
-
-  <p>The actual generation call is <code>model.generate(**inputs, max_new_tokens=20, do_sample=False, pad_token_id=tokenizer.eos_token_id)</code>. <code>max_new_tokens</code> caps how much new text gets produced &mdash; without it the model could ramble until it hit its context limit. <code>do_sample=False</code> is the key setting: it means greedy decoding, always taking the single most probable next token, which is fully deterministic &mdash; the same prompt always produces the same output. (<code>do_sample=True</code> would instead sample from the probability distribution, weighted by likelihood, for more varied but non-deterministic text &mdash; this is where the temperature math from Part 2 actually plugs in.)</p>
+  <p>This script is the &ldquo;hello world&rdquo; of using a pretrained model. Five small steps, in order:</p>
 
   <div class="post-code">tokenizer = AutoTokenizer.from_pretrained("gpt2", token=hf_token)<br>
 model = AutoModelForCausalLM.from_pretrained("gpt2", token=hf_token)<br>
@@ -67,6 +57,21 @@ with torch.no_grad():<br>
 <br>
 generated_text = tokenizer.decode(output_ids[0], skip_special_tokens=True)
 </div>
+
+  <ol>
+    <li><strong>Tokenizer.</strong> <code>AutoTokenizer.from_pretrained("gpt2")</code> loads the exact tokenizer GPT-2 was trained with. A model only understands numbers, so using a different tokenizer would mean the same number means something else to it than intended.</li>
+    <li><strong>Weights.</strong> <code>"gpt2"</code> is a checkpoint name &mdash; a saved snapshot of a trained network&rsquo;s parameters, hosted on the Hugging Face Hub. <code>AutoModelForCausalLM.from_pretrained("gpt2")</code> downloads those weights straight into a GPT-2-shaped model, no retraining needed. &ldquo;CausalLM&rdquo; just means: trained to predict the next token from everything before it.</li>
+    <li><strong><code>model.eval()</code>.</strong> Some layers (like Dropout) behave differently in training than in real use. <code>.eval()</code> switches all of them into inference mode &mdash; a standing habit whenever you&rsquo;re not actively training.</li>
+    <li><strong>Encode the prompt.</strong> <code>tokenizer(prompt, return_tensors="pt")</code> turns text into a tensor of token IDs, shaped <code>(batch=1, sequence_length)</code>.</li>
+    <li><strong><code>torch.no_grad()</code>.</strong> Gradients are only needed for training. This is a forward pass only, so tracking them would just burn memory for nothing.</li>
+  </ol>
+
+  <p>The generation call itself has two settings worth knowing:</p>
+
+  <ul>
+    <li><code>max_new_tokens=20</code> caps how much new text gets produced &mdash; without it the model could ramble until it hit its context limit.</li>
+    <li><code>do_sample=False</code> is the key one: greedy decoding, always take the single most probable next token. Deterministic &mdash; same prompt, same output every time. (<code>do_sample=True</code> would sample from the distribution instead, weighted by likelihood &mdash; this is where the temperature math from Part 2 plugs in.)</li>
+  </ul>
 
   <hr>
 
