@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Building a GPT From Scratch, Part 4: Live URL Fetch and Clean — Sireesha Jakku</title>
+<meta name="description" content="Wiring real-world input into the pipeline — give it a URL, fetch the page, strip it down to clean article text with trafilatura, and fit it inside GPT-2's 1024-token context window.">
+<link rel="stylesheet" href="/blog/post.css">
+<script>try{if(localStorage.getItem('theme')!=='dark')document.addEventListener('DOMContentLoaded',function(){document.body.classList.add('light')})}catch(e){}</script>
+<style>
+  .eyebrow { font-family: 'Geist Mono', monospace; font-size: 11px; letter-spacing: 0.12em; color: var(--accent); text-transform: uppercase; margin-bottom: 10px; }
+  .post-code { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; font-family: 'Geist Mono', monospace; font-size: 13px; overflow-x: auto; margin: 20px 0; }
+  .callout { background: var(--surface); border-left: 3px solid var(--accent); border-radius: 6px; padding: 14px 18px; margin: 20px 0; font-size: 15px; }
+</style>
+</head>
+<body class="light">
+<script>try{if(localStorage.getItem('theme')==='dark')document.body.classList.remove('light')}catch(e){}</script>
+<div class="page">
+
+<header class="post-header">
+  <nav>
+    <a href="/" class="nav-link">home</a>
+    <a href="/blog" class="nav-link active">blog</a>
+    <a href="/roadmap.html" class="nav-link">AI Engineer Roadmap</a>
+  </nav>
+  <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">☀ DARK</button>
+</header>
+
+<article>
+  <p class="eyebrow">Build Log &middot; GPT From Scratch &middot; Part 4</p>
+  <p class="post-date">Jul 8, 2026</p>
+  <h1>Building a GPT From Scratch, Part 4: Live URL Fetch and Clean</h1>
+  <p class="post-summary">Every session so far fed the model a prompt I typed by hand. This one wires in real-world input: give it a URL, and the script fetches the page, extracts just the article text out of all the surrounding HTML noise, and builds a summarization prompt that respects GPT-2&rsquo;s 1024-token context window.</p>
+  <hr>
+
+  <p>The goal for this session was narrow on purpose: take the greedy-decode loop from <a href="/blog/gpt-from-scratch-part-3.html">Part 3</a> and give it something to actually chew on &mdash; a real article, not a hardcoded string. That meant three new problems to solve: downloading a page, pulling the article out of it, and making sure the result actually fits in the model&rsquo;s head.</p>
+
+  <hr>
+
+  <h2>Fetching and cleaning: two libraries, two jobs</h2>
+
+  <p>It&rsquo;s tempting to reach for one tool that does &ldquo;get me the article from this URL,&rdquo; but that&rsquo;s really two separate problems, and <code>fetch_and_clean()</code> keeps them separate on purpose:</p>
+
+  <div class="post-code">headers = {"User-Agent": "Mozilla/5.0 (compatible; MiniGPT-learning-script/1.0)"}<br>
+response = requests.get(url, headers=headers, timeout=10)<br>
+response.raise_for_status()<br>
+<br>
+article_text = trafilatura.extract(response.text, favor_precision=True)<br>
+<br>
+if not article_text:<br>
+&nbsp;&nbsp;raise ValueError(f"trafilatura could not extract article text from {url}")
+</div>
+
+  <ul>
+    <li><strong>requests</strong> does the HTTP GET &mdash; nothing more. It knows nothing about HTML structure; it just hands back whatever bytes the server sent, the same as <code>curl</code> would.</li>
+    <li><strong>trafilatura</strong> takes that raw HTML and figures out which part of the page is actually &ldquo;the article,&rdquo; as opposed to the nav bar, ads, comments, and cookie banners around it. It parses the DOM, scores each region by text density and structural cues, and returns just the likely main content as plain text &mdash; sparing me from writing brittle BeautifulSoup selectors that break the moment a site changes its layout.</li>
+  </ul>
+
+  <p>A few details earn their keep here: the <code>User-Agent</code> header avoids some sites&rsquo; basic bot-blocking, which would otherwise return an error page instead of the article. <code>timeout=10</code> means a hung connection fails loudly instead of blocking the script forever. And <code>raise_for_status()</code> turns HTTP errors (404, 500&hellip;) into an exception immediately &mdash; without it, the script would happily keep going with an error page&rsquo;s HTML as if it were real content. <code>favor_precision=True</code> tells trafilatura: when in doubt, leave text <em>out</em> rather than risk including boilerplate. For summarization, a little missing content is far less harmful than junk sneaking into the prompt.</p>
+
+  <hr>
+
+  <h2>Building the prompt</h2>
+
+  <p>GPT-2 isn&rsquo;t instruction-tuned the way ChatGPT is &mdash; it was only ever trained to predict &ldquo;what word comes next&rdquo; over a huge pile of raw internet text. It has no built-in concept of &ldquo;please summarize this.&rdquo; The trick is to construct text that <em>looks like</em> the start of a summary and let the model&rsquo;s next-token statistics carry the pattern forward:</p>
+
+  <div class="post-code">def build_prompt(article_text: str) -> str:<br>
+&nbsp;&nbsp;instruction = "Summarize the following article in 3 sentences:\n\n"<br>
+&nbsp;&nbsp;return f"{instruction}{article_text}\n\nSummary:"
+</div>
+
+  <p>That trailing <code>"Summary:"</code> is doing real work &mdash; it&rsquo;s not decoration. It sets up a pattern GPT-2 has seen millions of times in its training data (article, then a labeled summary), so the most probable next tokens are ones that continue that pattern rather than, say, more article text.</p>
+
+  <hr>
+
+  <h2>Respecting the context window</h2>
+
+  <p>GPT-2&rsquo;s context window is 1024 tokens &mdash; and that&rsquo;s not just a prompt limit, it&rsquo;s a hard ceiling on <em>prompt + generated tokens combined</em>. A real article can easily blow past that on its own, so the prompt has to be truncated before it ever reaches the model, or generation fails outright.</p>
+
+  <div class="post-code">token_ids = tokenizer.encode(prompt)<br>
+max_prompt_tokens = max_context_tokens - reserved_for_generation<br>
+<br>
+if len(token_ids) <= max_prompt_tokens:<br>
+&nbsp;&nbsp;return prompt<br>
+<br>
+truncated_ids = token_ids[:max_prompt_tokens]<br>
+return tokenizer.decode(truncated_ids)
+</div>
+
+  <p>Two things worth calling out:</p>
+
+  <ol>
+    <li><strong>The budget is split, not just capped.</strong> If the prompt is allowed to fill all 1024 slots, the model has zero room left to actually write a summary. <code>reserved_for_generation</code> (100 tokens by default) carves out space for the output before the prompt gets to claim anything.</li>
+    <li><strong>Truncating happens on tokens, not characters or words.</strong> Token count doesn&rsquo;t map cleanly onto either &mdash; GPT-2&rsquo;s tokenizer can split one rare word or name into several tokens, or fold short words together. Guessing a cutoff from character count risks being wildly off in either direction; only the tokenizer&rsquo;s own <code>encode()</code> gives the real number, so slicing the token list and decoding back to text is the only way to land the cut exactly where intended.</li>
+  </ol>
+
+  <p>Zoomed out, the whole pipeline is a series of hand-offs, each one narrowing what the model will actually see: full HTML page &rarr; trafilatura strips it to article text only &rarr; <code>build_prompt</code> wraps that text with the instruction &rarr; <code>truncate_to_token_limit</code> caps it at ~924 tokens. The model never sees raw HTML, and it never sees more than those ~924 tokens no matter how long the source page is &mdash; anything past that cutoff is silently dropped, which is why the function prints a warning when it triggers.</p>
+
+  <div class="callout">The catch: for an article as long as the GPT-2 Wikipedia page, that 924-token budget only covers the opening sections &mdash; not the whole thing. So the &ldquo;summary&rdquo; really only reflects the beginning of the article. That&rsquo;s the real limitation of truncating from the front, and worth knowing before trusting the output.</div>
+
+  <hr>
+
+  <h2>Running it end to end</h2>
+
+  <p>The full pipeline is just those three pieces chained together, feeding into the <code>greedy_generate</code> loop from Part 3:</p>
+
+  <div class="post-code">article_text = fetch_and_clean(url)<br>
+prompt = build_prompt(article_text)<br>
+prompt = truncate_to_token_limit(tokenizer, prompt, max_context_tokens=1024, reserved_for_generation=100)<br>
+<br>
+summary = greedy_generate(model, tokenizer, prompt, max_new_tokens=100)
+</div>
+
+  <p>Nothing about the decoding loop itself changed from Part 3 &mdash; the point of this session was entirely upstream of it: turning an arbitrary URL into something the model can safely consume. The output quality is still rough (GPT-2 is a small, non-instruction-tuned model doing its best impression of summarization), but the pipeline now takes real input instead of a string I typed myself, which is the actual milestone here.</p>
+
+</article>
+
+<div class="more-posts">
+  <p class="more-posts-label">// more posts</p>
+  <div class="more-posts-list">
+    <a href="/blog/gpt-from-scratch-part-3.html" class="more-post-card">
+      <span class="more-post-title">Building a GPT From Scratch, Part 3: Loading GPT-2 and Writing My Own Greedy Decode Loop</span>
+      <span class="more-post-date">July 4, 2026</span>
+    </a>
+    <a href="/blog/gpt-from-scratch-part-2.html" class="more-post-card">
+      <span class="more-post-title">Building a GPT From Scratch, Part 2: Probability Distributions, Softmax, and Temperature</span>
+      <span class="more-post-date">July 2, 2026</span>
+    </a>
+    <a href="/blog/gpt-from-scratch-part-1.html" class="more-post-card">
+      <span class="more-post-title">Building a GPT From Scratch, Part 1: Why Build It Instead of Just Calling an API?</span>
+      <span class="more-post-date">July 1, 2026</span>
+    </a>
+  </div>
+</div>
+
+</div>
+<script type="module" src="/blog/post.js"></script>
+</body>
+</html>

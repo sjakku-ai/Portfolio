@@ -9,6 +9,14 @@ export type BlogPost = {
 
 const posts: BlogPost[] = [
   {
+    slug: 'gpt-from-scratch-part-4',
+    metadata: {
+      title: 'Building a GPT From Scratch, Part 4: Live URL Fetch and Clean',
+      publishedAt: '2026-07-08',
+      summary: 'Wiring real-world input into the pipeline — give it a URL, fetch the page, strip it down to clean article text with trafilatura, and fit it inside GPT-2\'s 1024-token context window.',
+    },
+  },
+  {
     slug: 'gpt-from-scratch-part-3',
     metadata: {
       title: 'Building a GPT From Scratch, Part 3: Loading GPT-2 and Writing My Own Greedy Decode Loop',
