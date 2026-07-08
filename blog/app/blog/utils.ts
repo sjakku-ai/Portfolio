@@ -9,6 +9,14 @@ export type BlogPost = {
 
 const posts: BlogPost[] = [
   {
+    slug: 'gpt-from-scratch-part-3',
+    metadata: {
+      title: 'Building a GPT From Scratch, Part 3: Loading GPT-2 and Writing My Own Greedy Decode Loop',
+      publishedAt: '2026-07-04',
+      summary: 'Loading a pretrained GPT-2 checkpoint with Hugging Face, then rebuilding its greedy decoding loop by hand — argmax, one token at a time — to check my understanding against the library\'s own generate() call.',
+    },
+  },
+  {
     slug: 'gpt-from-scratch-part-2',
     metadata: {
       title: 'Building a GPT From Scratch, Part 2: Probability Distributions, Softmax, and Temperature',

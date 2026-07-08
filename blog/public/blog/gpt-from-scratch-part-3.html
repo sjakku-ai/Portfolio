@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Building a GPT From Scratch, Part 3: Loading GPT-2 and Writing My Own Greedy Decode Loop — Sireesha Jakku</title>
+<meta name="description" content="Loading a pretrained GPT-2 checkpoint with Hugging Face, then rebuilding its greedy decoding loop by hand — argmax, one token at a time — to check my understanding against the library's own generate() call.">
+<link rel="stylesheet" href="/blog/post.css">
+<script>try{if(localStorage.getItem('theme')!=='dark')document.addEventListener('DOMContentLoaded',function(){document.body.classList.add('light')})}catch(e){}</script>
+<style>
+  .eyebrow { font-family: 'Geist Mono', monospace; font-size: 11px; letter-spacing: 0.12em; color: var(--accent); text-transform: uppercase; margin-bottom: 10px; }
+  .post-code { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; font-family: 'Geist Mono', monospace; font-size: 13px; overflow-x: auto; margin: 20px 0; }
+</style>
+</head>
+<body class="light">
+<script>try{if(localStorage.getItem('theme')==='dark')document.body.classList.remove('light')}catch(e){}</script>
+<div class="page">
+
+<header class="post-header">
+  <nav>
+    <a href="/" class="nav-link">home</a>
+    <a href="/blog" class="nav-link active">blog</a>
+    <a href="/roadmap.html" class="nav-link">AI Engineer Roadmap</a>
+  </nav>
+  <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">☀ DARK</button>
+</header>
+
+<article>
+  <p class="eyebrow">Build Log &middot; GPT From Scratch &middot; Part 3</p>
+  <p class="post-date">Jul 4, 2026</p>
+  <h1>Building a GPT From Scratch, Part 3: Loading GPT-2 and Writing My Own Greedy Decode Loop</h1>
+  <p class="post-summary">With the softmax and temperature math from <a href="/blog/gpt-from-scratch-part-2.html">Part 2</a> in hand, I loaded a real pretrained GPT-2 and generated text two ways &mdash; once through Hugging Face&rsquo;s built-in <code>generate()</code>, and once through a decode loop I wrote myself &mdash; to prove I actually understood what was happening between them.</p>
+  <hr>
+
+  <p>Step one on my build order from <a href="/blog/gpt-from-scratch-part-1.html">Part 1</a> was: get GPT-2 and the Hugging Face tokenizer doing basic generation through my own greedy-decode loop, to validate the pipeline works end to end. This post covers the two files that did that &mdash; <code>load_and_generate_gpt2.py</code>, which loads the model and calls the library&rsquo;s own generation function, and <code>greedy_decode.py</code>, which reimplements that same generation by hand.</p>
+
+  <hr>
+
+  <h2>load_and_generate_gpt2.py: loading a pretrained checkpoint</h2>
+
+  <p>This script is the &ldquo;hello world&rdquo; of using a pretrained model, broken into deliberate steps:</p>
+
+  <ol>
+    <li><strong>Load a tokenizer that matches the model.</strong> A model only understands numbers, and every pretrained model was trained against one specific tokenizer &mdash; using a different one would mean the same number means something different to the model than intended. <code>AutoTokenizer.from_pretrained("gpt2")</code> pulls the exact tokenizer GPT-2 was trained with.</li>
+    <li><strong>Load the pretrained weights.</strong> <code>"gpt2"</code> is a checkpoint name &mdash; a saved snapshot of a neural network&rsquo;s learned parameters after training, hosted on the Hugging Face Hub. Rather than spending OpenAI-scale compute retraining GPT-2 from nothing, <code>AutoModelForCausalLM.from_pretrained("gpt2")</code> downloads those already-learned weights straight into a GPT-2-shaped model. &ldquo;CausalLM&rdquo; just means it was trained to predict the next token given everything before it &mdash; a text-generation model, not a classifier.</li>
+    <li><strong><code>model.eval()</code>.</strong> Some layers, like Dropout, behave differently during training (randomly disabling neurons to prevent overfitting) than during real use. <code>.eval()</code> switches every such layer into inference mode &mdash; a standing habit any time you&rsquo;re not actively training.</li>
+    <li><strong>Encode the prompt.</strong> <code>tokenizer(prompt, return_tensors="pt")</code> turns the text into a PyTorch tensor of token IDs, shaped <code>(batch=1, sequence_length)</code>.</li>
+    <li><strong>Generate, inside <code>torch.no_grad()</code>.</strong> Gradients are only needed for training, to work out how to adjust weights via backpropagation. Since this is a forward pass only, tracking gradients would burn memory and compute for nothing &mdash; so it&rsquo;s disabled.</li>
+  </ol>
+
+  <p>The actual generation call is <code>model.generate(**inputs, max_new_tokens=20, do_sample=False, pad_token_id=tokenizer.eos_token_id)</code>. <code>max_new_tokens</code> caps how much new text gets produced &mdash; without it the model could ramble until it hit its context limit. <code>do_sample=False</code> is the key setting: it means greedy decoding, always taking the single most probable next token, which is fully deterministic &mdash; the same prompt always produces the same output. (<code>do_sample=True</code> would instead sample from the probability distribution, weighted by likelihood, for more varied but non-deterministic text &mdash; this is where the temperature math from Part 2 actually plugs in.)</p>
+
+  <div class="post-code">tokenizer = AutoTokenizer.from_pretrained("gpt2", token=hf_token)<br>
+model = AutoModelForCausalLM.from_pretrained("gpt2", token=hf_token)<br>
+model.eval()<br>
+<br>
+prompt = "The capital of France is"<br>
+inputs = tokenizer(prompt, return_tensors="pt")<br>
+<br>
+with torch.no_grad():<br>
+&nbsp;&nbsp;output_ids = model.generate(<br>
+&nbsp;&nbsp;&nbsp;&nbsp;**inputs,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;max_new_tokens=20,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;do_sample=False,&nbsp;&nbsp;# greedy: always take the single most probable token<br>
+&nbsp;&nbsp;&nbsp;&nbsp;pad_token_id=tokenizer.eos_token_id,<br>
+&nbsp;&nbsp;)<br>
+<br>
+generated_text = tokenizer.decode(output_ids[0], skip_special_tokens=True)
+</div>
+
+  <hr>
+
+  <h2>greedy_decode.py: the same thing, by hand</h2>
+
+  <p>The point of this file is to strip away <code>model.generate()</code> and write the loop it&rsquo;s hiding, one token at a time:</p>
+
+  <div class="post-code">for _ in range(max_new_tokens):<br>
+&nbsp;&nbsp;outputs = model(input_ids)<br>
+&nbsp;&nbsp;logits = outputs.logits[:, -1, :]&nbsp;&nbsp;# only the LAST position predicts what's next<br>
+&nbsp;&nbsp;next_token_id = logits.argmax(dim=-1)&nbsp;&nbsp;# greedy: take the highest-scoring token<br>
+&nbsp;&nbsp;if next_token_id == eos_token_id: break<br>
+&nbsp;&nbsp;input_ids = torch.cat([input_ids, next_token_id], dim=-1)&nbsp;&nbsp;# re-feed everything so far
+</div>
+
+  <p>Three things stood out to me writing this:</p>
+
+  <ol>
+    <li><strong>The model doesn&rsquo;t just predict &ldquo;the next token.&rdquo;</strong> Every forward pass returns logits shaped <code>(batch, sequence_length, vocab_size)</code> &mdash; one full probability-distribution-worth of logits for <em>every</em> position in the sequence, not just the end. Only the last row, <code>logits[:, -1, :]</code>, is the prediction for what comes after everything seen so far; the earlier rows predicted tokens that are already fixed in place from previous steps. It&rsquo;s easy to assume the model outputs one token&rsquo;s worth of information — it actually outputs a distribution per position, every single step.</li>
+    <li><strong>Generation re-feeds the whole sequence, every step.</strong> There&rsquo;s no persistent internal &ldquo;memory&rdquo; carried between loop iterations here &mdash; each iteration hands the model the prompt plus everything generated so far, and the model recomputes from scratch. That&rsquo;s the literal meaning of <em>autoregressive</em>: each new token is generated conditioned on all previous tokens, including the ones the model itself just produced.</li>
+    <li><strong>Greedy decoding is just <code>argmax</code>.</strong> All of the softmax/temperature machinery from Part 2 is, in this file, replaced by the simplest possible choice: skip the sampling step entirely and always take the single highest-logit token. That&rsquo;s exactly what <code>do_sample=False</code> means in <code>load_and_generate_gpt2.py</code>&rsquo;s library call &mdash; the two files are doing the identical thing, just one hides it behind an API and one exposes every step.</li>
+  </ol>
+
+  <p>Running both against the same prompt and confirming they produce identical output was the actual validation step &mdash; if my hand-rolled loop and Hugging Face&rsquo;s <code>generate()</code> disagreed, something in my understanding of the pipeline was wrong. They matched, which is the real payoff of building this by hand: not the code itself, but the confidence that I know what every line of a library call like <code>model.generate()</code> is actually doing underneath.</p>
+
+</article>
+
+<div class="more-posts">
+  <p class="more-posts-label">// more posts</p>
+  <div class="more-posts-list">
+    <a href="/blog/gpt-from-scratch-part-2.html" class="more-post-card">
+      <span class="more-post-title">Building a GPT From Scratch, Part 2: Probability Distributions, Softmax, and Temperature</span>
+      <span class="more-post-date">July 2, 2026</span>
+    </a>
+    <a href="/blog/gpt-from-scratch-part-1.html" class="more-post-card">
+      <span class="more-post-title">Building a GPT From Scratch, Part 1: Why Build It Instead of Just Calling an API?</span>
+      <span class="more-post-date">July 1, 2026</span>
+    </a>
+    <a href="/blog/llm-building-blocks-glossary.html" class="more-post-card">
+      <span class="more-post-title">LLM Building Blocks: A Plain-English Glossary</span>
+      <span class="more-post-date">June 30, 2026</span>
+    </a>
+  </div>
+</div>
+
+</div>
+<script type="module" src="/blog/post.js"></script>
+</body>
+</html>

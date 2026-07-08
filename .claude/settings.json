@@ -3,7 +3,8 @@
     "allow": [
       "PowerShell(ls \"c:\\\\Sireesha-AI\\\\Portfolio\\\\\" | Where-Object { $_.Name -ne \"blog\" })",
       "PowerShell(ls \"c:\\\\Sireesha-AI\\\\Portfolio\\\\blog\\\\\" | Where-Object { $_.Name -notlike \"node_modules\" })",
-      "PowerShell(ls \"c:\\\\Sireesha-AI\\\\Portfolio\\\\blog\\\\app\\\\blog\\\\\" -Recurse | Where-Object { -not $_.PSIsContainer })"
+      "PowerShell(ls \"c:\\\\Sireesha-AI\\\\Portfolio\\\\blog\\\\app\\\\blog\\\\\" -Recurse | Where-Object { -not $_.PSIsContainer })",
+      "Read(//c/Sireesha-AI/AI engineer/MiniGPT/**)"
     ],
     "additionalDirectories": [
       "c:\\Sireesha-AI\\Portfolio\\blog\\.next"
