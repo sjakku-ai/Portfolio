@@ -53,20 +53,37 @@ export function BlogPosts() {
           }}>
             {yearGroup.year}
           </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-            {yearGroup.months.map((monthGroup) => (
-              <div key={monthGroup.month}>
-                <p style={{
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {yearGroup.months.map((monthGroup, monthIndex) => (
+              <details
+                key={monthGroup.month}
+                open={yearGroup === years[0] && monthIndex === 0}
+                style={{
+                  border: '1px solid var(--border)',
+                  borderRadius: '10px',
+                  padding: '2px 0',
+                }}
+              >
+                <summary style={{
                   fontFamily: 'var(--font-geist-mono)',
                   fontSize: '10px',
                   letterSpacing: '0.12em',
                   textTransform: 'uppercase',
                   color: 'var(--dim)',
-                  marginBottom: '10px',
+                  padding: '10px 14px',
+                  cursor: 'pointer',
+                  userSelect: 'none',
+                  listStyle: 'none',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
                 }}>
-                  {monthGroup.month}
-                </p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <span>{monthGroup.month}</span>
+                  <span style={{ color: 'var(--dim)', opacity: 0.6 }}>
+                    {monthGroup.posts.length}
+                  </span>
+                </summary>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', padding: '4px 14px 14px' }}>
                   {monthGroup.posts.map((post) => (
                     <Link
                       key={post.slug}
@@ -106,7 +123,7 @@ export function BlogPosts() {
                     </Link>
                   ))}
                 </div>
-              </div>
+              </details>
             ))}
           </div>
         </div>
